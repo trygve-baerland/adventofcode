@@ -99,8 +99,6 @@ public class Tree : INode
             lines.MoveNext();
             GetChild(dirName).ProcessLines(lines);
         }
-
-
     }
 
     public void ProcessLs(IEnumerator<string> lines)
@@ -136,7 +134,7 @@ public class Tree : INode
         ProcessLines(lines);
     }
 
-    // Perform all actions tree and all its children:
+    // Perform actions on a tree and all its children:
     public void Visit(Action<Tree> action)
     {
         action(this);
