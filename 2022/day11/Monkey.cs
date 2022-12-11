@@ -2,10 +2,10 @@ namespace Day11;
 
 public class Monkey
 {
+    public static ulong MaxValue { get; } = 9699690;
     public ulong Inspected { get; private set; } = 0;
     public Queue<ulong> Worries { get; init; } = new();
     public ulong Id { get; init; }
-    public ulong Denom { get; init; }
     public Func<ulong, ulong> Operation { get; set; } = default!;
     public Func<ulong, bool> Condition { get; set; } = default!;
 
@@ -24,7 +24,7 @@ public class Monkey
     public void Inspect(ulong worry)
     {
         // Update worry using operation:
-        worry = Operation(worry) % 9699690;
+        worry = Operation(worry) % MaxValue;
 
         // Monkeys is bored with the item:
         //worry /= 3;

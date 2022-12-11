@@ -10,8 +10,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 0,
             Worries = new Queue<ulong>(new ulong[] { 63, 57 }),
             Operation = i => checked(i * 11),
-            Condition = i => i % 7 == 0,
-            Denom = 7
+            Condition = i => i % 7 == 0
         }
     },
 
@@ -22,8 +21,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 1,
             Worries = new Queue<ulong>(new ulong[] { 82, 66, 87, 78, 77, 92, 83 }),
             Operation = i => checked(i + 1),
-            Condition = i => i % 11 == 0,
-            Denom = 11,
+            Condition = i => i % 11 == 0
         }
     },
 
@@ -34,8 +32,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 2,
             Worries = new Queue<ulong>(new ulong[] { 97, 53, 53, 85, 58, 54 }),
             Operation = i => checked(i * 7),
-            Condition = i => i % 13 == 0,
-            Denom = 13
+            Condition = i => i % 13 == 0
         }
     },
 
@@ -46,8 +43,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 3,
             Worries = new Queue<ulong>(new ulong[] { 50 }),
             Operation = i => checked(i + 3),
-            Condition = i => i % 3 == 0,
-            Denom = 3
+            Condition = i => i % 3 == 0
         }
     },
 
@@ -58,8 +54,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 4,
             Worries = new Queue<ulong>(new ulong[] { 64, 69, 52, 65, 73 }),
             Operation = i => checked(i + 6),
-            Condition = i => i % 17 == 0,
-            Denom = 17
+            Condition = i => i % 17 == 0
         }
     },
 
@@ -70,8 +65,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 5,
             Worries = new Queue<ulong>(new ulong[] { 57, 91, 65 }),
             Operation = i => checked(i + 5),
-            Condition = i => i % 2 == 0,
-            Denom = 2
+            Condition = i => i % 2 == 0
         }
     },
 
@@ -82,8 +76,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 6,
             Worries = new Queue<ulong>(new ulong[] { 67, 91, 84, 78, 60, 69, 99, 83 }),
             Operation = i => checked(i * i),
-            Condition = i => i % 5 == 0,
-            Denom = 5
+            Condition = i => i % 5 == 0
         }
     },
 
@@ -94,8 +87,7 @@ Dictionary<int, Monkey> monkeys = new()
             Id = 7,
             Worries = new Queue<ulong>(new ulong[] { 58, 78, 69, 65 }),
             Operation = i => checked(i + 7),
-            Condition = i => i % 19 == 0,
-            Denom = 19
+            Condition = i => i % 19 == 0
         }
     }
 };
