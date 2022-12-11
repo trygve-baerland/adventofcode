@@ -118,11 +118,12 @@ monkeys[7].IfTrue = monkeys[5];
 monkeys[7].IfFalse = monkeys[1];
 
 // Finally, do some rounds:
-int numRounds = 10000;
+int numRounds = 20; // 10000 for part 2
+bool getCalmed = true; // false for part 2
 Enumerable.Range(0, numRounds).ForEach(arg =>
 {
     Console.Write($"Round: {arg}\r");
-    monkeys.ForEach(item => item.Value.DoRound());
+    monkeys.ForEach(item => item.Value.DoRound(getCalmed));
 });
 Console.Write("\n");
 // Part 1:

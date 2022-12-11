@@ -12,22 +12,23 @@ public class Monkey
     public Monkey IfTrue { get; set; } = default!;
     public Monkey IfFalse { get; set; } = default!;
 
-    public void DoRound()
+    public void DoRound(bool getCalmed)
     {
         //Console.WriteLine($"Monkey {Id}");
         while (Worries.Count > 0)
         {
-            Inspect(Worries.Dequeue());
+            Inspect(Worries.Dequeue(), getCalmed);
         }
     }
 
-    public void Inspect(ulong worry)
+    public void Inspect(ulong worry, bool getCalmed)
     {
         // Update worry using operation:
         worry = Operation(worry) % MaxValue;
 
         // Monkeys is bored with the item:
-        //worry /= 3;
+        if (getCalmed) worry /= 3;
+
         Inspected++;
         // Check condition
         if (Condition(worry)) IfTrue.Worries.Enqueue(worry);
