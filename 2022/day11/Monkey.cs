@@ -5,23 +5,28 @@ public class Monkey
     public static ulong MaxValue { get; } = 9699690;
     public ulong Inspected { get; private set; } = 0;
     public Queue<ulong> Worries { get; init; } = new();
-    public ulong Id { get; init; }
-    public Func<ulong, ulong> Operation { get; set; } = default!;
-    public Func<ulong, bool> Condition { get; set; } = default!;
+    public uint Id { get; init; }
 
-    public Monkey IfTrue { get; set; } = default!;
-    public Monkey IfFalse { get; set; } = default!;
+    public uint Divisor { get; init; }
+    public Func<ulong, ulong> Operation { get; init; } = default!;
 
-    public void DoRound(bool getCalmed)
+    public uint IfTrue { get; init; }
+    public uint IfFalse { get; init; }
+
+    public IEnumerable<(uint, ulong)> DoRound(bool getCalmed)
     {
-        //Console.WriteLine($"Monkey {Id}");
         while (Worries.Count > 0)
         {
-            Inspect(Worries.Dequeue(), getCalmed);
+            yield return Inspect(Worries.Dequeue(), getCalmed);
         }
     }
 
-    public void Inspect(ulong worry, bool getCalmed)
+    private bool Condition(ulong worry)
+    {
+        return worry % Divisor == 0;
+    }
+
+    public (uint, ulong) Inspect(ulong worry, bool getCalmed)
     {
         // Update worry using operation:
         worry = Operation(worry) % MaxValue;
@@ -31,7 +36,22 @@ public class Monkey
 
         Inspected++;
         // Check condition
-        if (Condition(worry)) IfTrue.Worries.Enqueue(worry);
-        else IfFalse.Worries.Enqueue(worry);
+        if (Condition(worry)) return (IfTrue, worry);
+        else return (IfFalse, worry);
+    }
+
+}
+
+public static class Extensions
+{
+    public static void DoRound(this Dictionary<uint, Monkey> monkeys, bool getCalmed)
+    {
+        foreach (var item in monkeys)
+        {
+            foreach (var (id, worry) in item.Value.DoRound(getCalmed))
+            {
+                monkeys[id].Worries.Enqueue(worry);
+            }
+        }
     }
 }
