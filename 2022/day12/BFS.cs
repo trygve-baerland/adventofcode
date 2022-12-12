@@ -23,6 +23,13 @@ public static class BFS
         return t - s <= 1;
     }
 
+    public static bool CanDescend(this Graph g, Node source, Node target)
+    {
+        char s = MapChar(g.GetHeight(source));
+        char t = MapChar(g.GetHeight(target));
+        return t - s >= -1;
+    }
+
     public static int EdgeWeight(this Graph g, Node source, Node target)
     {
         char s = MapChar(g.GetHeight(source));

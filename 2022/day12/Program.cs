@@ -1,4 +1,5 @@
-﻿using Day12;
+﻿using System.Diagnostics;
+using Day12;
 using Utils;
 // Read height map:
 var graph = Graph.FromFile("input.txt");
@@ -10,39 +11,77 @@ var E = graph.IndexOf('E');
 Console.WriteLine($"'S' is at {S}");
 Console.WriteLine($"'E' is at {E}");
 
+var sw = new Stopwatch();
 // Part 1:
+sw.Start();
 var result = graph.BFS(S, E,
-    adjacentNodes: v => graph.AdjacentNodes(v, false));
+    adjacentNodes: v => Node.Directions
+        .Select(dir => v + dir)
+        .Where(w => graph.InGrid(w) && graph.CanTraverse(v, w))
+);
 // Print distances:
-Console.WriteLine($"Part 1: {result}");
+Console.WriteLine($"Part 1: {result} [{sw.ElapsedMilliseconds}]");
 
 // Part 2:
-
+sw.Restart();
 // Now we need to calculate all distance to 'E' where starting point is 'a':
 var result2 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => graph.BFS(v, E,
-        vv => graph.AdjacentNodes(vv, false))
+        vv => Node.Directions
+            .Select(dir => vv + dir)
+            .Where(w => graph.InGrid(w) && graph.CanTraverse(vv, w))
+        )
     )
     .Min();
 
-Console.WriteLine($"Part 2: {result2}");
+Console.WriteLine($"Part 2: {result2} [{sw.ElapsedMilliseconds}]");
+
+// Part 2 with multiple sources:
+sw.Restart();
+var result22 = graph.BFS(
+    sources: graph.GetNodes().Where(v => graph.GetHeight(v) == 'a'),
+    target: E,
+    adjacentNodes: v => Node.Directions
+        .Select(dir => v + dir)
+        .Where(w => graph.InGrid(w) && graph.CanTraverse(v, w))
+);
+Console.WriteLine($"Part 2 (altnernative approach): {result22} [{sw.ElapsedMilliseconds}]");
+
+// Part 3 with multiple targets:
+sw.Restart();
+var result23 = graph.BFS(
+    source: E,
+    target: v => graph.GetHeight(v) == 'a',
+    adjacentNodes: v => Node.Directions
+        .Select(dir => v + dir)
+        .Where(w => graph.InGrid(w) && graph.CanDescend(v, w))
+);
+
+Console.WriteLine($"Part 2 (starting from 'E'): {result23} [{sw.ElapsedMilliseconds}]");
 
 // Now with Dijkstra:
 
 // Part 1:
+sw.Restart();
 var result3 = graph.Dijkstra(S, E,
-    v => graph.AdjacentNodes(v, true),
-    (v, w) => graph.EdgeWeight(v, w));
-Console.WriteLine($"Dijkstra 1: {result3}");
+    v => Node.Directions
+        .Select(dir => v + dir)
+        .Where(w => graph.InGrid(w)),
+    graph.EdgeWeight);
+
+Console.WriteLine($"Dijkstra 1: {result3} [{sw.ElapsedMilliseconds}]");
 
 // Part 2:
+sw.Restart();
 var result4 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => graph.Dijkstra(v, E,
-        vv => graph.AdjacentNodes(vv, true),
+        vv => Node.Directions
+            .Select(dir => vv + dir)
+            .Where(w => graph.InGrid(w)),
         (vv, w) => graph.EdgeWeight(vv, w))
     )
     .Min();
 
-Console.WriteLine($"Dijkstra 2: {result4}");
+Console.WriteLine($"Dijkstra 2: {result4} [{sw.ElapsedMilliseconds}]");
