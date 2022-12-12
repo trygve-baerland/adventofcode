@@ -12,7 +12,7 @@ Console.WriteLine($"'E' is at {E}");
 
 // Part 1:
 var result = graph.BFS(S, E,
-    adjacentNodes: v => BFS.AdjacentNodes(graph, v, false));
+    adjacentNodes: v => graph.AdjacentNodes(v, false));
 // Print distances:
 Console.WriteLine($"Part 1: {result}");
 
@@ -22,7 +22,7 @@ Console.WriteLine($"Part 1: {result}");
 var result2 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => graph.BFS(v, E,
-        vv => BFS.AdjacentNodes(graph, vv, false))
+        vv => graph.AdjacentNodes(vv, false))
     )
     .Min();
 
@@ -32,16 +32,16 @@ Console.WriteLine($"Part 2: {result2}");
 
 // Part 1:
 var result3 = graph.Dijkstra(S, E,
-    v => BFS.AdjacentNodes(graph, v, true),
-    (v, w) => BFS.EdgeWeight(graph, v, w));
+    v => graph.AdjacentNodes(v, true),
+    (v, w) => graph.EdgeWeight(v, w));
 Console.WriteLine($"Dijkstra 1: {result3}");
 
 // Part 2:
 var result4 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => graph.Dijkstra(v, E,
-        vv => BFS.AdjacentNodes(graph, vv, true),
-        (vv, w) => BFS.EdgeWeight(graph, vv, w))
+        vv => graph.AdjacentNodes(vv, true),
+        (vv, w) => graph.EdgeWeight(vv, w))
     )
     .Min();
 

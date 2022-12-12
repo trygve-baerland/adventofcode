@@ -1,6 +1,6 @@
 namespace Utils;
 
-public class Node
+public struct Node
 {
     public int X { get; set; }
     public int Y { get; set; }

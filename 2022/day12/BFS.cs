@@ -3,7 +3,7 @@ namespace Day12;
 
 public static class BFS
 {
-    public static IEnumerable<Node> AdjacentNodes(Graph g, Node v, bool noHeight)
+    public static IEnumerable<Node> AdjacentNodes(this Graph g, Node v, bool noHeight)
     {
         foreach (var dir in Node.Directions)
         {
@@ -16,14 +16,14 @@ public static class BFS
         }
     }
 
-    public static bool CanTraverse(Graph g, Node source, Node target)
+    public static bool CanTraverse(this Graph g, Node source, Node target)
     {
         char s = MapChar(g.GetHeight(source));
         char t = MapChar(g.GetHeight(target));
         return t - s <= 1;
     }
 
-    public static int EdgeWeight(Graph g, Node source, Node target)
+    public static int EdgeWeight(this Graph g, Node source, Node target)
     {
         char s = MapChar(g.GetHeight(source));
         char t = MapChar(g.GetHeight(target));
@@ -55,16 +55,4 @@ public static class BFS
             return int.MaxValue;
         }
     }
-
-    public static IEnumerable<(int row, int col)> GetIndices(char[][] arr)
-    {
-        foreach (var ix in Enumerable.Range(0, arr.Length))
-        {
-            foreach (var iy in Enumerable.Range(0, arr[ix].Length))
-            {
-                yield return (ix, iy);
-            }
-        }
-    }
-
 }
