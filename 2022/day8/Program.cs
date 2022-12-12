@@ -1,128 +1,56 @@
 ﻿using Utils;
 // Read input:
-var array = File.OpenText("input.txt")
-    .GetLines()
-    .Select(line => line.ToCharArray())
-    .ToArray();
+var graph = Graph.FromFile("input.txt");
 
+var result1 = graph.GetNodes()
+    .Where(v => Helpers.Visible(graph, v))
+    .Count();
 
-int visibleTrees = 0;
-int maxScenic = 0;
-for (var row = 0; row < array.Count(); row++)
-{
-    var Nrow = array[row].Count();
-    for (var col = 0; col < Nrow; col++)
-    {
-        if (Helpers.Visible(array, row, col)) visibleTrees++;
+var result2 = graph.GetNodes()
+    .Select(v => Helpers.Scenic(graph, v))
+    .Max();
 
-        var scenic = Helpers.ScenicScore(array, row, col);
-        if (scenic > maxScenic) maxScenic = scenic;
-    }
-}
-
-Console.WriteLine($"Part 1: {visibleTrees}");
-Console.WriteLine($"Part 2: {maxScenic}");
+Console.WriteLine($"Part 1: {result1}");
+Console.WriteLine($"Part 2: {result2}");
 class Helpers
 {
-    public static bool VisibleFromRight(char[][] arr, int row, int col)
+    public static IEnumerable<Node> GetAllInDirection(Graph g, Node v, (int x, int y) dir)
     {
-        var value = arr[row][col];
-        return !arr[row].Select((v, i) => (v, i))
-            .Where(item => item.i > col && item.v >= value)
-            .Any();
-    }
-
-    public static bool VisibleFromLeft(char[][] arr, int row, int col)
-    {
-        var value = arr[row][col];
-        return !arr[row].Select((v, i) => (v, i))
-            .Where(item => item.i < col && item.v >= value)
-            .Any();
-    }
-
-    public static bool VisibleFromAbove(char[][] arr, int row, int col)
-    {
-        // Get column array:
-        var colArr = arr.Select(row => row[col]).ToArray();
-
-        var value = arr[row][col];
-        return !colArr.Select((v, i) => (v, i))
-            .Where(item => item.i < row && item.v >= value)
-            .Any();
-    }
-
-    public static bool VisibleFromBelow(char[][] arr, int row, int col)
-    {
-        // Get column array:
-        var colArr = arr.Select(row => row[col]).ToArray();
-
-        var value = arr[row][col];
-        return !colArr.Select((v, i) => (v, i))
-            .Where(item => item.i > row && item.v >= value)
-            .Any();
-
-    }
-
-    public static bool Visible(char[][] arr, int row, int col)
-    {
-        return VisibleFromRight(arr, row, col) ||
-            VisibleFromLeft(arr, row, col) ||
-            VisibleFromAbove(arr, row, col) ||
-            VisibleFromBelow(arr, row, col);
-    }
-
-    public static int Scenic(IEnumerable<char> sightLine, char height)
-    {
-        int visibleTrees = 0;
-
-        foreach (var (tree, i) in sightLine.Select((v, i) => (v, i)))
+        v += dir;
+        while (g.InGrid(v))
         {
-            visibleTrees++;
-            if (tree >= height)
-            {
-                return visibleTrees;
-            }
+            yield return v;
+            v += dir;
         }
-        return visibleTrees;
     }
 
-    public static IEnumerable<char> GetRightSightLine(char[][] arr, int row, int col)
+    public static bool VisibleInDirection(Graph g, Node v, (int x, int y) dir)
     {
-        return arr[row].Select((v, i) => (v, i))
-            .Where(item => item.i > col)
-            .Select(item => item.v);
+        return !GetAllInDirection(g, v, dir)
+            .Where(w => g.GetHeight(w) >= g.GetHeight(v))
+            .Any();
     }
-
-    public static IEnumerable<char> GetLeftSightLine(char[][] arr, int row, int col)
+    public static bool Visible(Graph g, Node v)
     {
-        return arr[row].Select((v, i) => (v, i))
-            .Where(item => item.i < col)
-            .Select(item => item.v)
-            .Reverse();
+        return Node.Directions
+            .Where(dir => VisibleInDirection(g, v, dir))
+            .Any();
     }
 
-    public static IEnumerable<char> GetUpSightLine(char[][] arr, int row, int col)
+    public static int Scenic(Graph g, IEnumerable<Node> sightLine, char height)
     {
-        return arr.Select((v, i) => (v[col], i))
-            .Where(item => item.i < row)
-            .Select(item => item.Item1)
-            .Reverse();
+        return sightLine.Select((tree, index) => (tree, index))
+            .Where(item => g.GetHeight(item.tree) >= height)
+            .Select(item => item.index + 1)
+            .FirstOrDefault(sightLine.Count());
     }
 
-    public static IEnumerable<char> GetDownSightLine(char[][] arr, int row, int col)
+    public static int Scenic(Graph g, Node v)
     {
-        return arr.Select((v, i) => (v[col], i))
-            .Where(item => item.i > row)
-            .Select(item => item.Item1);
+        var height = g.GetHeight(v);
+        return Node.Directions
+            .Select(dir => GetAllInDirection(g, v, dir))
+            .Select(sightLine => Scenic(g, sightLine, height))
+            .Aggregate((acc, item) => acc * item);
     }
-
-    public static int ScenicScore(char[][] arr, int row, int col)
-    {
-        return Scenic(GetRightSightLine(arr, row, col), arr[row][col])
-            * Scenic(GetLeftSightLine(arr, row, col), arr[row][col])
-            * Scenic(GetUpSightLine(arr, row, col), arr[row][col])
-            * Scenic(GetDownSightLine(arr, row, col), arr[row][col]);
-    }
-
-
 }
