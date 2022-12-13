@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using Day12;
 using Utils;
+using Utils.Graphs;
 // Read height map:
 var graph = Graph.FromFile("input.txt");
 
@@ -14,7 +15,7 @@ Console.WriteLine($"'E' is at {E}");
 var sw = new Stopwatch();
 // Part 1:
 sw.Start();
-var result = graph.BFS(S, E,
+var result = ShortestPath.BFS(S, E,
     adjacentNodes: v => Node.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w) && graph.CanTraverse(v, w))
@@ -27,7 +28,7 @@ sw.Restart();
 // Now we need to calculate all distance to 'E' where starting point is 'a':
 var result2 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
-    .Select(v => graph.BFS(v, E,
+    .Select(v => ShortestPath.BFS(v, E,
         vv => Node.Directions
             .Select(dir => vv + dir)
             .Where(w => graph.InGrid(w) && graph.CanTraverse(vv, w))
@@ -39,7 +40,7 @@ Console.WriteLine($"Part 2: {result2} [{sw.ElapsedMilliseconds}]");
 
 // Part 2 with multiple sources:
 sw.Restart();
-var result22 = graph.BFS(
+var result22 = ShortestPath.BFS(
     sources: graph.GetNodes().Where(v => graph.GetHeight(v) == 'a'),
     target: E,
     adjacentNodes: v => Node.Directions
@@ -50,7 +51,7 @@ Console.WriteLine($"Part 2 (altnernative approach): {result22} [{sw.ElapsedMilli
 
 // Part 3 with multiple targets:
 sw.Restart();
-var result23 = graph.BFS(
+var result23 = ShortestPath.BFS(
     source: E,
     target: v => graph.GetHeight(v) == 'a',
     adjacentNodes: v => Node.Directions
@@ -64,7 +65,7 @@ Console.WriteLine($"Part 2 (starting from 'E'): {result23} [{sw.ElapsedMilliseco
 
 // Part 1:
 sw.Restart();
-var result3 = graph.Dijkstra(S, E,
+var result3 = ShortestPath.Dijkstra(S, E,
     v => Node.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w)),
@@ -76,7 +77,7 @@ Console.WriteLine($"Dijkstra 1: {result3} [{sw.ElapsedMilliseconds}]");
 sw.Restart();
 var result4 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
-    .Select(v => graph.Dijkstra(v, E,
+    .Select(v => ShortestPath.Dijkstra(v, E,
         vv => Node.Directions
             .Select(dir => vv + dir)
             .Where(w => graph.InGrid(w)),

@@ -1,8 +1,8 @@
-namespace Utils;
+namespace Utils.Graphs;
 
-public static class Extension
+public static class ShortestPath
 {
-    public static int BFS(this Graph g, Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS(Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
     {
         var toVisit = new Queue<(Node index, int dist)>();
         toVisit.Enqueue((source, 0));
@@ -23,7 +23,7 @@ public static class Extension
         return int.MaxValue;
     }
 
-    public static int BFS(this Graph g, IEnumerable<Node> sources, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS(IEnumerable<Node> sources, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
     {
         var toVisit = new Queue<(Node index, int dist)>();
         sources.ForEach(s => toVisit.Enqueue((s, 0)));
@@ -44,7 +44,7 @@ public static class Extension
         return int.MaxValue;
     }
 
-    public static int BFS(this Graph g, Node source, Func<Node, bool> target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS(Node source, Func<Node, bool> target, Func<Node, IEnumerable<Node>> adjacentNodes)
     {
         var toVisit = new Queue<(Node index, int dist)>();
         toVisit.Enqueue((source, 0));
@@ -65,7 +65,7 @@ public static class Extension
         return int.MaxValue;
     }
 
-    public static int Dijkstra(this Graph g, Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes, Func<Node, Node, int> weights)
+    public static int Dijkstra(Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes, Func<Node, Node, int> weights)
     {
         var toVisit = new PriorityQueue<Node, int>();
         toVisit.Enqueue(source, 0);
