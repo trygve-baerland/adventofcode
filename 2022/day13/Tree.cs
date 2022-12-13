@@ -34,22 +34,17 @@ public class Tree : INode
         if (node.GetType() == typeof(Tree))
         {
             var tree = (Tree)node;
-            // Check overlapping children:
-            foreach (var item in Children.Zip(tree.Children).ToList())
-            {
-                var sorted = item.First.IsSorted(item.Second);
-                if (sorted == Sorted.False || sorted == Sorted.True)
-                {
-                    return sorted;
-                }
-            }
-            // At this point all children were OK
-            return (Children.Count() - tree.Children.Count()) switch
-            {
-                < 0 => Sorted.True,
-                > 0 => Sorted.False,
-                _ => Sorted.Continue
-            };
+            return Children.Zip(tree.Children,
+                (node1, node2) => node1.IsSorted(node2))
+                .Where(sorted => sorted != Sorted.Continue)
+                .FirstOrDefault(
+                    (Children.Count() - tree.Children.Count()) switch
+                    {
+                        < 0 => Sorted.True,
+                        > 0 => Sorted.False,
+                        _ => Sorted.Continue
+                    }
+                );
         }
         else
         {
