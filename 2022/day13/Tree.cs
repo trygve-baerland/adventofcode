@@ -9,10 +9,9 @@ public enum Sorted
 public interface INode
 {
     public INode? Parent { get; set; }
-
     public string ToString();
-
     public Sorted IsSorted(INode node);
+    public INode ToTree();
 }
 
 public class Tree : INode
@@ -45,17 +44,20 @@ public class Tree : INode
                 }
             }
             // At this point all children were OK
-            if (Children.Count() < tree.Children.Count()) return Sorted.True;
-            else if (Children.Count() > tree.Children.Count()) return Sorted.False;
-            else return Sorted.Continue;
+            return (Children.Count() - tree.Children.Count()) switch
+            {
+                < 0 => Sorted.True,
+                > 0 => Sorted.False,
+                _ => Sorted.Continue
+            };
         }
         else
         {
-            var temp = new Tree();
-            temp.Children.Add(node);
-            return IsSorted(temp);
+            return IsSorted(node.ToTree());
         }
     }
+
+    public INode ToTree() => this;
 }
 
 public class Leaf : INode
@@ -73,16 +75,23 @@ public class Leaf : INode
         // Console.WriteLine($"Compare {this} with {node}");
         if (node.GetType() == typeof(Leaf))
         {
-            var tempSize = ((Leaf)node).Size;
-            if (Size < tempSize) return Sorted.True;
-            else if (Size > tempSize) return Sorted.False;
-            return Sorted.Continue;
+            return (Size - ((Leaf)node).Size) switch
+            {
+                < 0 => Sorted.True,
+                > 0 => Sorted.False,
+                _ => Sorted.Continue
+            };
         }
         else
         {
-            var temp = new Tree { };
-            temp.Children.Add(this);
-            return temp.IsSorted(node);
+            return ToTree().IsSorted(node);
         }
+    }
+
+    public INode ToTree()
+    {
+        var temp = new Tree { };
+        temp.Children.Add(this);
+        return temp;
     }
 }
