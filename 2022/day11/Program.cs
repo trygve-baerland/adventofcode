@@ -9,11 +9,12 @@ var monkeys = MonkeyParserStuff.AllMonkeys.Parse(
 // Finally, do some rounds:
 int numRounds = 20; // 10000 for part 2
 bool getCalmed = true; // false for part 2
-Enumerable.Range(0, numRounds).ForEach(arg =>
-{
-    Console.Write($"Round: {arg}\r");
-    monkeys.DoRound(getCalmed);
-});
+Helpers.Repeat(arg =>
+    {
+        Console.Write($"Round: {arg}\r");
+        monkeys.DoRound(getCalmed);
+    },
+    times: numRounds);
 Console.Write("\n");
 // Part 1:
 var result = monkeys.Select(item => item.Value.Inspected)
