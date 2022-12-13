@@ -51,7 +51,6 @@ public class Tree : INode
             return IsSorted(node.ToTree());
         }
     }
-
     public INode ToTree() => this;
 }
 

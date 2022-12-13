@@ -10,15 +10,13 @@ public static class Extensions
         }
     }
 
-    public static IEnumerable<IEnumerable<string>> Clump(this IEnumerable<string> lines, int n)
+    public static IEnumerable<IEnumerable<T>> Clump<T>(this IEnumerable<T> lines, int n)
     {
-        var asList = lines.ToList();
+        int N = lines.Count();
         int counter = 0;
-        int N = asList.Count;
-        Console.WriteLine(N);
         while (counter < N)
         {
-            yield return asList.Skip(counter).Take(n);
+            yield return lines.Skip(counter).Take(n);
             counter += n;
         }
     }

@@ -5,33 +5,24 @@ using Day13;
 var sw = new Stopwatch();
 // Parse input
 sw.Start();
-var enumerator = File.OpenText("input.txt")
+var allTrees = File.OpenText("input.txt")
     .GetLines()
-    .GetEnumerator();
+    .Where(line => line != "")
+    .Select(TreeHelpers.FromString)
+    .ToList();
 
-int counter = 1;
-List<int> correctOrder = new();
-List<Tree> allTrees = new();
-while (enumerator.MoveNext())
-{
-    // Get pair of trees
-    var lhs = TreeHelpers.FromString(enumerator.Current);
-    enumerator.MoveNext();
-    var rhs = TreeHelpers.FromString(enumerator.Current);
-    var sorted = lhs.IsSorted(rhs);
-    if (sorted == Sorted.True || sorted == Sorted.Continue)
-    {
-        correctOrder.Add(counter);
-    }
-    enumerator.MoveNext();
-    counter++;
-
-    allTrees.Add(lhs);
-    allTrees.Add(rhs);
-}
+Console.WriteLine($"Parsing took {sw.ElapsedMilliseconds} ms");
 
 // Part 1:
-Console.WriteLine($"Part 1: {correctOrder.Sum()} [{sw.ElapsedMilliseconds}]");
+sw.Restart();
+var part1 = allTrees
+    .Clump(2)
+    .Select((pair, index) => (pair.First().IsSorted(pair.Skip(1).First()), index))
+    .Where(item => item.Item1 != Sorted.False)
+    .Select(item => item.index + 1)
+    .Sum();
+
+Console.WriteLine($"Part 1: {part1} [{sw.ElapsedMilliseconds}]");
 
 // Part 2;
 sw.Restart();
