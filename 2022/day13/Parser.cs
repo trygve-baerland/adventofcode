@@ -1,4 +1,5 @@
 using Sprache;
+using Utils.Parsers;
 namespace Day13;
 
 public static class TreeHelpers
@@ -20,10 +21,10 @@ public static class TreeHelpers
         select int.Parse(number);
 
     public static readonly Parser<Tree> TreeParser =
-        (from lparen in Parse.Char('[')
-         from tree in Parse.Ref(() => Node).DelimitedBy(Parse.Char(',').Token()).Optional()
-         from rparen in Parse.Char(']')
-         select FromEnumerable(tree.GetOrElse(new List<INode>()))).Named("tree");
+        from _1 in Parse.Char('[')
+        from tree in Parse.Ref(() => Node).DelimitedBy(Parse.Char(',').Token()).Optional()
+        from _2 in Parse.Char(']')
+        select FromEnumerable(tree.GetOrElse(new List<INode>()));
 
     public static readonly Parser<INode> Leaf =
         from number in Integer

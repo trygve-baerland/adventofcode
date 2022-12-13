@@ -1,2 +1,5 @@
-﻿// See https://aka.ms/new-console-template for more information
-Console.WriteLine("Hello, World!");
+﻿using Utils;
+
+// Parse/prepare input:
+var lines = File.OpenText("input.txt")
+    .GetLines();
