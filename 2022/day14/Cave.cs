@@ -13,7 +13,7 @@ public class Cave
     private char[][] Array { get; set; }
     private Node TopLeft { get; set; }
     private Node BottomRight { get; set; }
-    private HashSet<Node> Blockers { get; } = new();
+    public HashSet<Node> Blockers { get; } = new();
     private bool WithFloor { get; init; }
     public Cave(IEnumerable<IEnumerable<Node>> rockLines, bool withFloor = false)
     {
@@ -73,10 +73,7 @@ public class Cave
             foreach (var node in prev.NodesTo(next, true))
             {
                 Blockers.Add(node);
-                if (GetLocalCoords(node) is (int row, int col) x)
-                {
-                    Array[x.row][x.col] = '#';
-                }
+                ColorNode(node, '#');
             }
             prev = next;
         }
@@ -100,6 +97,14 @@ public class Cave
         return (node.Y - TopLeft.Y, node.X - TopLeft.X);
     }
 
+    public void ColorNode(Node node, char c)
+    {
+        if (GetLocalCoords(node) is (int, int) x)
+        {
+            Array[x.row][x.col] = c;
+        }
+    }
+
 
     public BlockedEnum DropSand(Node start)
     {
@@ -121,11 +126,7 @@ public class Cave
         if (blocked == BlockedEnum.Blocked)
         {
             // Draw sand on grid:
-            var coords = GetLocalCoords(sandPos);
-            if (coords is (int row, int col) x)
-            {
-                Array[x.row][x.col] = 'o';
-            };
+            ColorNode(sandPos, 'o');
             Blockers.Add(sandPos);
         }
         return blocked;
@@ -146,5 +147,12 @@ public class Cave
     }
 
     public static List<(int x, int y)> DropDirections = new() { (0, 1), (-1, 1), (1, 1) };
+
+    public IEnumerable<Node> GetNextNodes(Node node)
+    {
+        return DropDirections
+            .Select(dir => node + dir)
+            .Where(v => NotBlocked(v) == BlockedEnum.Free);
+    }
 
 }
