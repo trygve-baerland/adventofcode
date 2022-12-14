@@ -47,7 +47,7 @@ GraphSearch.DFSRecursive(
     postVisitor: node =>
     {
         cave.Blockers.Add(node);
-        cave.ColorNode(node, 'o');
+        //cave.ColorNode(node, 'o');
         if (Cave.DropDirections
             .Select(dir => node + dir)
             .Where(node => cave.NotBlocked(node) == BlockedEnum.Abyss)
@@ -70,8 +70,8 @@ GraphSearch.DFSRecursive(
     adjacentNodes: cave.GetNextNodes,
     postVisitor: node =>
     {
-        cave.Blockers.Add(node);
-        cave.ColorNode(node, 'o');
+        //cave.Blockers.Add(node);
+        //cave.ColorNode(node, 'o');
         counter++;
         return false;
     }
@@ -89,7 +89,7 @@ GraphSearch.DFSIterative(
     postVisitor: node =>
     {
         cave.Blockers.Add(node);
-        cave.ColorNode(node, 'o');
+        //cave.ColorNode(node, 'o');
         if (Cave.DropDirections
             .Select(dir => node + dir)
             .Where(node => cave.NotBlocked(node) == BlockedEnum.Abyss)
@@ -112,8 +112,8 @@ GraphSearch.DFSIterative(
     adjacentNodes: cave.GetNextNodes,
     postVisitor: node =>
     {
-        cave.Blockers.Add(node);
-        cave.ColorNode(node, 'o');
+        //cave.Blockers.Add(node);
+        //cave.ColorNode(node, 'o');
         counter++;
         return false;
     }
