@@ -1,17 +1,11 @@
 namespace Day14;
 using Utils;
 
-public class AbyssException : Exception
-{
-    public AbyssException(string message)
-        : base(message) { }
-}
-
 public enum BlockedEnum
 {
     Blocked,
     Free,
-    Abyss
+    Abyss,
 }
 
 public class Cave
@@ -19,9 +13,12 @@ public class Cave
     private char[][] Array { get; set; }
     private Node TopLeft { get; set; }
     private Node BottomRight { get; set; }
-    public Cave(IEnumerable<IEnumerable<Node>> rockLines)
+    private HashSet<Node> Blockers { get; } = new();
+    private bool WithFloor { get; init; }
+    public Cave(IEnumerable<IEnumerable<Node>> rockLines, bool withFloor = false)
     {
         // Get bounding box based on rock lines:
+        WithFloor = withFloor;
         int minX = rockLines.Select(
             rockLine => rockLine.Select(node => node.X).Min()
         ).Min();
@@ -35,6 +32,10 @@ public class Cave
         int maxY = rockLines.Select(
             rockLine => rockLine.Select(node => node.Y).Max()
         ).Max();
+        if (withFloor)
+        {
+            maxY += 2;
+        }
         TopLeft = new Node { X = minX, Y = minY };
         BottomRight = new Node { X = maxX, Y = maxY };
         // Initialize array:
@@ -46,6 +47,16 @@ public class Cave
             .ToArray();
         // Draw in rocks:
         rockLines.ForEach(rockLine => { DrawRockLine(rockLine); });
+        // Draw floor:
+        if (withFloor)
+        {
+            DrawRockLine(new List<Node>() {
+                new Node {
+                    X = minX, Y = maxY
+                },
+                BottomRight
+            });
+        }
     }
     public void DrawRockLine(IEnumerable<Node> rockLine)
     {
@@ -61,8 +72,11 @@ public class Cave
             next = enumerator.Current;
             foreach (var node in prev.NodesTo(next, true))
             {
-                var (row, col) = GetLocalCoords(node);
-                Array[row][col] = '#';
+                Blockers.Add(node);
+                if (GetLocalCoords(node) is (int row, int col) x)
+                {
+                    Array[x.row][x.col] = '#';
+                }
             }
             prev = next;
         }
@@ -70,21 +84,22 @@ public class Cave
 
     public void Print()
     {
-        Console.WriteLine($"Bounding box: {TopLeft} <-> {BottomRight}");
         foreach (var row in Array)
         {
-            Console.WriteLine(row);
+            Console.WriteLine(new string(row));
         }
+        Console.WriteLine($"Bounding box: {TopLeft} <-> {BottomRight}");
     }
 
-    public (int row, int col) GetLocalCoords(Node node)
+    public (int row, int col)? GetLocalCoords(Node node)
     {
         if (!(node >= TopLeft && node <= BottomRight))
         {
-            throw new AbyssException($"Node {node} is not in cave");
+            return null;
         }
         return (node.Y - TopLeft.Y, node.X - TopLeft.X);
     }
+
 
     public BlockedEnum DropSand(Node start)
     {
@@ -99,35 +114,35 @@ public class Cave
                     item => item.Item2 != BlockedEnum.Blocked,
                     (sandPos, BlockedEnum.Blocked));
         }
+        if (sandPos == start && NotBlocked(sandPos) == BlockedEnum.Blocked)
+        {
+            return BlockedEnum.Abyss;
+        }
         if (blocked == BlockedEnum.Blocked)
         {
             // Draw sand on grid:
-            var (row, col) = GetLocalCoords(sandPos);
-            Array[row][col] = 'o';
+            var coords = GetLocalCoords(sandPos);
+            if (coords is (int row, int col) x)
+            {
+                Array[x.row][x.col] = 'o';
+            };
+            Blockers.Add(sandPos);
         }
         return blocked;
     }
 
     public BlockedEnum NotBlocked(Node node)
     {
-        try
+        if (Blockers.Contains(node))
         {
-            return NotBlocked(GetLocalCoords(node));
+            return BlockedEnum.Blocked;
         }
-        catch (AbyssException)
+        else if (node.Y >= BottomRight.Y)
         {
-            return BlockedEnum.Abyss;
+            if (WithFloor) return BlockedEnum.Blocked;
+            else return BlockedEnum.Abyss;
         }
-    }
-
-    public BlockedEnum NotBlocked((int row, int col) coord)
-    {
-        return Array[coord.row][coord.col] switch
-        {
-            '#' => BlockedEnum.Blocked,
-            'o' => BlockedEnum.Blocked,
-            _ => BlockedEnum.Free
-        };
+        return BlockedEnum.Free;
     }
 
     public static List<(int x, int y)> DropDirections = new() { (0, 1), (-1, 1), (1, 1) };

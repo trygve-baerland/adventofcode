@@ -8,7 +8,7 @@ var rockLines = File.OpenText("input.txt")
     .Select(rockLine => rockLine.ToList())
     .ToList();
 
-Cave cave = new(rockLines);
+Cave cave = new(rockLines, withFloor: true);
 
 // Part 1:
 var source = new Node { X = 500, Y = 0 };
