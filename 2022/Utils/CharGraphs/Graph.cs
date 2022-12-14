@@ -31,6 +31,17 @@ public struct Node
     {
         return !(lhs == rhs);
     }
+
+    public static bool operator <=(Node lhs, Node rhs)
+    {
+        return lhs.X <= rhs.X && lhs.Y <= rhs.Y;
+    }
+
+    public static bool operator >=(Node lhs, Node rhs)
+    {
+        return lhs.X >= rhs.X && lhs.Y >= rhs.Y;
+    }
+
     #endregion Operators
     #region Misc
     public static IEnumerable<(int x, int y)> Directions { get; } = new List<(int x, int y)> { (-1, 0), (1, 0), (0, -1), (0, 1) };
@@ -49,6 +60,24 @@ public struct Node
     public override string ToString()
     {
         return $"({X}, {Y})";
+    }
+
+    public IEnumerable<Node> NodesTo(Node target, bool includeEnd)
+    {
+        var dx = target - this;
+        // Concatenate to one step at a time:
+        dx = (Math.Sign(dx.x), Math.Sign(dx.y));
+        var current = this;
+        while (current != target)
+        {
+            yield return current;
+            current += dx;
+        }
+        if (includeEnd)
+        {
+            yield return current;
+        }
+
     }
     #endregion Misc
 }
