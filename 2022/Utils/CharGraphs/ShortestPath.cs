@@ -2,15 +2,16 @@ namespace Utils.Graphs;
 
 public static class ShortestPath
 {
-    public static int BFS(Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS<TNode>(TNode source, TNode target, Func<TNode, IEnumerable<TNode>> adjacentNodes)
+    where TNode : IEquatable<TNode>
     {
-        var toVisit = new Queue<(Node index, int dist)>();
+        var toVisit = new Queue<(TNode index, int dist)>();
         toVisit.Enqueue((source, 0));
-        var explored = new HashSet<Node>();
+        var explored = new HashSet<TNode>();
         while (toVisit.TryDequeue(out var item))
         {
             var (v, dist) = item;
-            if (v == target) return dist;
+            if (v.Equals(target)) return dist;
             if (!explored.Contains(v))
             {
                 explored.Add(v);
@@ -23,15 +24,16 @@ public static class ShortestPath
         return int.MaxValue;
     }
 
-    public static int BFS(IEnumerable<Node> sources, Node target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS<TNode>(IEnumerable<TNode> sources, TNode target, Func<TNode, IEnumerable<TNode>> adjacentNodes)
+    where TNode : IEquatable<TNode>
     {
-        var toVisit = new Queue<(Node index, int dist)>();
+        var toVisit = new Queue<(TNode index, int dist)>();
         sources.ForEach(s => toVisit.Enqueue((s, 0)));
-        var explored = new HashSet<Node>();
+        var explored = new HashSet<TNode>();
         while (toVisit.TryDequeue(out var item))
         {
             var (v, dist) = item;
-            if (v == target) return dist;
+            if (v.Equals(target)) return dist;
             if (!explored.Contains(v))
             {
                 explored.Add(v);
@@ -44,11 +46,11 @@ public static class ShortestPath
         return int.MaxValue;
     }
 
-    public static int BFS(Node source, Func<Node, bool> target, Func<Node, IEnumerable<Node>> adjacentNodes)
+    public static int BFS<TNode>(TNode source, Func<TNode, bool> target, Func<TNode, IEnumerable<TNode>> adjacentNodes)
     {
-        var toVisit = new Queue<(Node index, int dist)>();
+        var toVisit = new Queue<(TNode index, int dist)>();
         toVisit.Enqueue((source, 0));
-        var explored = new HashSet<Node>();
+        var explored = new HashSet<TNode>();
         while (toVisit.TryDequeue(out var item))
         {
             var (v, dist) = item;
@@ -65,15 +67,16 @@ public static class ShortestPath
         return int.MaxValue;
     }
 
-    public static int Dijkstra(Node source, Node target, Func<Node, IEnumerable<Node>> adjacentNodes, Func<Node, Node, int> weights)
+    public static int Dijkstra<TNode>(TNode source, TNode target, Func<TNode, IEnumerable<TNode>> adjacentNodes, Func<TNode, TNode, int> weights)
+    where TNode : IEquatable<TNode>
     {
-        var toVisit = new PriorityQueue<Node, int>();
+        var toVisit = new PriorityQueue<TNode, int>();
         toVisit.Enqueue(source, 0);
-        var explored = new HashSet<Node>();
+        var explored = new HashSet<TNode>();
 
         while (toVisit.TryDequeue(out var v, out var dist))
         {
-            if (v == target) return dist;
+            if (v.Equals(target)) return dist;
             if (!explored.Contains(v))
             {
                 explored.Add(v);

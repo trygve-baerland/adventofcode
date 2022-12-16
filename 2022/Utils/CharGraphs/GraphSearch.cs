@@ -2,11 +2,11 @@ namespace Utils.Graphs;
 
 public static class GraphSearch
 {
-    public static bool DFSRecursive(
-        Node source,
-        Func<Node, IEnumerable<Node>> adjacentNodes,
-        Func<Node, bool> postVisitor,
-        HashSet<Node> visited
+    public static bool DFSRecursive<TNode>(
+        TNode source,
+        Func<TNode, IEnumerable<TNode>> adjacentNodes,
+        Func<TNode, bool> postVisitor,
+        HashSet<TNode> visited
     )
     {
         if (!visited.Contains(source))
@@ -21,24 +21,24 @@ public static class GraphSearch
         return false;
     }
 
-    public static bool DFSRecursive(
-        Node source,
-        Func<Node, IEnumerable<Node>> adjacentNodes,
-        Func<Node, bool> postVisitor
+    public static bool DFSRecursive<TNode>(
+        TNode source,
+        Func<TNode, IEnumerable<TNode>> adjacentNodes,
+        Func<TNode, bool> postVisitor
     )
     {
         return DFSRecursive(source, adjacentNodes, postVisitor, new());
     }
 
-    public static bool DFSIterative(
-        Node source,
-        Func<Node, IEnumerable<Node>> adjacentNodes,
-        Func<Node, bool> postVisitor
+    public static bool DFSIterative<TNode>(
+        TNode source,
+        Func<TNode, IEnumerable<TNode>> adjacentNodes,
+        Func<TNode, bool> postVisitor
     )
     {
         // Initialize stuff:
-        var stack = new Stack<(Node node, IEnumerator<Node> neighbours)>();
-        var explored = new HashSet<Node>();
+        var stack = new Stack<(TNode node, IEnumerator<TNode> neighbours)>();
+        var explored = new HashSet<TNode>();
         stack.Push((source, adjacentNodes(source).GetEnumerator()));
         while (stack.Count > 0)
         {

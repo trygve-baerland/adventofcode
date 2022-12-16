@@ -1,6 +1,6 @@
 namespace Utils;
 
-public struct Node
+public struct Node : IEquatable<Node>
 {
     public int X { get; set; }
     public int Y { get; set; }
@@ -25,6 +25,11 @@ public struct Node
     public static bool operator ==(Node lhs, Node rhs)
     {
         return lhs.X == rhs.X && lhs.Y == rhs.Y;
+    }
+
+    public bool Equals(Node other)
+    {
+        return this == other;
     }
 
     public static bool operator !=(Node lhs, Node rhs)
