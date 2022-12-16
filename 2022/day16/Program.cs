@@ -6,7 +6,7 @@ using Utils.Graphs;
 // Parse input:
 var sw = new Stopwatch();
 sw.Start();
-var valves = File.OpenText("test_input.txt")
+var valves = File.OpenText("input.txt")
     .GetLines()
     .Select(TunnelParsing.ParseValve)
     .ToList();
