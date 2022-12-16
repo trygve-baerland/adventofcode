@@ -31,7 +31,7 @@ var shortestPaths = ShortestPath.FloydWarshall(valves,
 Console.WriteLine($"Creating shortest path mapping took {sw.ElapsedMilliseconds} ms");
 
 // Print shortest paths:
-
+/*
 foreach (var i in Enumerable.Range(0, shortestPaths.Size))
 {
     Console.Write("[");
@@ -45,6 +45,7 @@ foreach (var item in shortestPaths.Index.Mapping)
 {
     Console.WriteLine($"{item.Key.Name}: {item.Value} -> {shortestPaths.Index.FromIndex(item.Value).Name}");
 }
+*/
 // We'll attempt solving it with DFS
 sw.Restart();
 var path = TunnelHelpers.OptimalRelease(
@@ -58,3 +59,12 @@ foreach (var (valve, time) in path)
 {
     Console.Write($"{valve.Name}[{time}], ");
 }
+Console.WriteLine("\n-------");
+// Part 2:
+sw.Restart();
+var part2 = TunnelHelpers.OptimalElephantRelease(
+    source: valveDict["AA"],
+    shortestPathMapping: shortestPaths,
+    timeout: 26
+);
+Console.WriteLine($"Part 2: {part2} [{sw.ElapsedMilliseconds}]");

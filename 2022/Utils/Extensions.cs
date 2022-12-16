@@ -36,4 +36,18 @@ public static class Extensions
             action(item);
         }
     }
+
+    public static IEnumerable<(T, T)> CrossProduct<T>(this IEnumerable<T> source, IEnumerable<T> other)
+    {
+        int counter = 0;
+        foreach (var t1 in source)
+        {
+            Console.Write($"{counter}\r");
+            foreach (var t2 in other)
+            {
+                yield return (t1, t2);
+            }
+            counter++;
+        }
+    }
 }

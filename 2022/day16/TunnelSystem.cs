@@ -1,3 +1,4 @@
+using Utils;
 using Utils.Graphs;
 namespace Day16;
 
@@ -88,7 +89,7 @@ public static class TunnelHelpers
         return totals[index];
     }
 
-    public static List<(Valve valve, int time)> OptimalElephantRelease(
+    public static int OptimalElephantRelease(
         Valve source,
         ShortestPathMapping<Valve> shortestPathMapping,
         int timeout
@@ -152,12 +153,21 @@ public static class TunnelHelpers
         // Get best path:
         Console.WriteLine($"Searched {totals.Count} paths");
         var pathVals = totals.Select((item, i) => EvaluatePath(item, timeout)).ToList();
-        var index = pathVals.IndexOf(pathVals.Max());
-        return totals[index];
+        return totals.CrossProduct(totals)
+            .Where(item => NoOverlap(item.Item1, item.Item2))
+            .Select(item => EvaluatePath(item.Item1, timeout) + EvaluatePath(item.Item2, timeout))
+            .Max();
     }
 
     public static int EvaluatePath(IEnumerable<(Valve valve, int time)> visited, int timeout)
     {
         return visited.Select(item => (timeout - item.time) * item.valve.Rate).Sum();
+    }
+
+    public static bool NoOverlap(IEnumerable<(Valve valve, int time)> path1, IEnumerable<(Valve valve, int time)> path2)
+    {
+        return !path1.Skip(1).Select(item => item.valve.Name)
+            .Intersect(path2.Skip(1).Select(item => item.valve.Name))
+            .Any();
     }
 }
