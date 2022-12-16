@@ -35,6 +35,8 @@ Console.WriteLine($"Part 1: {result}");
 // Part 2:
 int maxCoord = 4000000;
 
-Day15Helpers.SearchSignal((0, maxCoord), sensors, beacons)
-    .ForEach(node => { Console.WriteLine($"Possible candidate: {node}: {Day15Helpers.TuningFrequency(node)}"); });
+var part2 = Day15Helpers.SearchSignal((0, maxCoord), sensors, beacons)
+    .First();
+
+Console.WriteLine($"Possible candidate: {part2}: {Day15Helpers.TuningFrequency(part2)}");
 

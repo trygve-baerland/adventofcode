@@ -73,39 +73,24 @@ public class Day15Helpers
         }
     }
 
-    public static int TuningFrequency(Node node)
+    public static long TuningFrequency(Node node)
     {
-        return 4000000 * node.X + node.Y;
+        return 4000000 * ((long)node.X) + node.Y;
     }
 
     public static IEnumerable<Node> EquiDistantNodes(Node center, int dist)
     {
-        var corners = new Queue<Node>(new List<Node> {
-            new Node{
-                X = center.X - dist,
-                Y = center.Y
-            },
-            new Node {
-                X = center.X,
-                Y = center.Y - dist
-            },
-            new Node {
-                X = center.X + dist,
-                Y = center.Y
-            },
-            new Node {
-                X = center.X,
-                Y = center.Y + dist
-            }
-        }
-        );
-        foreach (var d in Enumerable.Range(0, dist))
+        var node = new Node
         {
-            foreach (var id in Enumerable.Range(0, 4))
+            X = center.X - dist,
+            Y = center.Y
+        };
+        foreach (var dir in Directions)
+        {
+            foreach (var _ in Enumerable.Range(0, dist))
             {
-                var corner = corners.Dequeue();
-                yield return corner;
-                corners.Enqueue(corner + Directions[id]);
+                yield return node;
+                node += dir;
             }
         }
     }
