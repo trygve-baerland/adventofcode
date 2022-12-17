@@ -1,48 +1,50 @@
 namespace Utils;
+using System.Numerics;
 
-public struct Node : IEquatable<Node>
+public struct Node<T> : IEquatable<Node<T>>
+where T : INumber<T>, IBitwiseOperators<T, T, T>, IConvertible
 {
-    public int X { get; set; }
-    public int Y { get; set; }
+    public T X { get; set; }
+    public T Y { get; set; }
 
-    public (int x, int y) Point { get => (X, Y); }
+    public (T x, T y) Point { get => (X, Y); }
 
     #region Operators
-    public static (int x, int y) operator -(Node lhs, Node rhs)
+    public static (T x, T y) operator -(Node<T> lhs, Node<T> rhs)
     {
         return (lhs.X - rhs.X, lhs.Y - rhs.Y);
     }
 
-    public static Node operator +(Node lhs, (int x, int y) rhs)
+    public static Node<T> operator +(Node<T> lhs, (T x, T y) rhs)
     {
-        return new Node
+        return new Node<T>
         {
-            X = lhs.X + rhs.x,
-            Y = lhs.Y + rhs.y
+            X = checked(lhs.X + rhs.x),
+            Y = checked(lhs.Y + rhs.y)
         };
     }
 
-    public static bool operator ==(Node lhs, Node rhs)
+    public static bool operator ==(Node<T> lhs, Node<T> rhs)
     {
         return lhs.X == rhs.X && lhs.Y == rhs.Y;
     }
 
-    public bool Equals(Node other)
+    public bool Equals(Node<T> other)
     {
         return this == other;
     }
 
-    public static bool operator !=(Node lhs, Node rhs)
+    public static bool operator !=(Node<T> lhs, Node<T> rhs)
     {
         return !(lhs == rhs);
     }
 
-    public static bool operator <=(Node lhs, Node rhs)
+    public static bool operator <=(Node<T> lhs, Node<T> rhs)
     {
         return lhs.X <= rhs.X && lhs.Y <= rhs.Y;
     }
 
-    public static bool operator >=(Node lhs, Node rhs)
+    public static bool operator >=(Node<T> lhs, Node<T> rhs)
     {
         return lhs.X >= rhs.X && lhs.Y >= rhs.Y;
     }
@@ -53,13 +55,13 @@ public struct Node : IEquatable<Node>
 
     public override bool Equals(object? obj)
     {
-        if (obj is not Node) return false;
-        Node p = (Node)obj;
+        if (obj is not Node<T>) return false;
+        Node<T> p = (Node<T>)obj;
         return this == p;
     }
     public override int GetHashCode()
     {
-        return X ^ Y;
+        return Convert.ToInt32(X ^ Y);
     }
 
     public override string ToString()
@@ -67,11 +69,14 @@ public struct Node : IEquatable<Node>
         return $"({X}, {Y})";
     }
 
-    public IEnumerable<Node> NodesTo(Node target, bool includeEnd)
+    public IEnumerable<Node<T>> NodesTo(Node<T> target, bool includeEnd)
     {
         var dx = target - this;
         // Concatenate to one step at a time:
-        dx = (Math.Sign(dx.x), Math.Sign(dx.y));
+        dx = (
+            (T)Convert.ChangeType(Math.Sign(Convert.ToDecimal(dx.x)), typeof(T)),
+            (T)Convert.ChangeType(Math.Sign(Convert.ToDecimal(dx.y)), typeof(T))
+        );
         var current = this;
         while (current != target)
         {
@@ -102,28 +107,28 @@ public class Graph
     }
 
     #region Public methods
-    public IEnumerable<Node> GetNodes()
+    public IEnumerable<Node<int>> GetNodes()
     {
         foreach (var idx in Enumerable.Range(0, Array.Length))
         {
             foreach (var idy in Enumerable.Range(0, Array[idx].Length))
             {
-                yield return new Node { X = idx, Y = idy };
+                yield return new Node<int> { X = idx, Y = idy };
             }
         }
     }
 
-    public Node IndexOf(char letter)
+    public Node<int> IndexOf(char letter)
     {
         var (line, row) = Array.Select((line, ind) => (line, ind))
             .Where(item => item.line.Contains(letter))
             .First();
 
         var col = System.Array.IndexOf(line, letter);
-        return new Node { X = row, Y = col };
+        return new Node<int> { X = row, Y = col };
     }
 
-    public char GetHeight(Node v)
+    public char GetHeight(Node<int> v)
     {
         try
         {
@@ -135,7 +140,7 @@ public class Graph
         }
     }
 
-    public bool InGrid(Node v)
+    public bool InGrid(Node<int> v)
     {
         return v.X >= 0 && v.X < Array.Length &&
             v.Y >= 0 && v.Y < Array[v.X].Length;

@@ -16,7 +16,7 @@ var sw = new Stopwatch();
 // Part 1:
 sw.Start();
 var result = ShortestPath.BFS(S, E,
-    adjacentNodes: v => Node.Directions
+    adjacentNodes: v => Node<int>.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w) && graph.CanTraverse(v, w))
 );
@@ -29,7 +29,7 @@ sw.Restart();
 var result2 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => ShortestPath.BFS(v, E,
-        vv => Node.Directions
+        vv => Node<int>.Directions
             .Select(dir => vv + dir)
             .Where(w => graph.InGrid(w) && graph.CanTraverse(vv, w))
         )
@@ -43,7 +43,7 @@ sw.Restart();
 var result22 = ShortestPath.BFS(
     sources: graph.GetNodes().Where(v => graph.GetHeight(v) == 'a'),
     target: E,
-    adjacentNodes: v => Node.Directions
+    adjacentNodes: v => Node<int>.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w) && graph.CanTraverse(v, w))
 );
@@ -54,7 +54,7 @@ sw.Restart();
 var result23 = ShortestPath.BFS(
     source: E,
     target: v => graph.GetHeight(v) == 'a',
-    adjacentNodes: v => Node.Directions
+    adjacentNodes: v => Node<int>.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w) && graph.CanDescend(v, w))
 );
@@ -66,7 +66,7 @@ Console.WriteLine($"Part 2 (starting from 'E'): {result23} [{sw.ElapsedMilliseco
 // Part 1:
 sw.Restart();
 var result3 = ShortestPath.Dijkstra(S, E,
-    v => Node.Directions
+    v => Node<int>.Directions
         .Select(dir => v + dir)
         .Where(w => graph.InGrid(w)),
     graph.EdgeWeight);
@@ -78,7 +78,7 @@ sw.Restart();
 var result4 = graph.GetNodes()
     .Where(v => graph.GetHeight(v) == 'a')
     .Select(v => ShortestPath.Dijkstra(v, E,
-        vv => Node.Directions
+        vv => Node<int>.Directions
             .Select(dir => vv + dir)
             .Where(w => graph.InGrid(w)),
         (vv, w) => graph.EdgeWeight(vv, w))

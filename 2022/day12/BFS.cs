@@ -3,9 +3,9 @@ namespace Day12;
 
 public static class BFS
 {
-    public static IEnumerable<Node> AdjacentNodes(this Graph g, Node v, bool noHeight)
+    public static IEnumerable<Node<int>> AdjacentNodes(this Graph g, Node<int> v, bool noHeight)
     {
-        foreach (var dir in Node.Directions)
+        foreach (var dir in Node<int>.Directions)
         {
             var w = v + dir;
             if (g.InGrid(w) &&
@@ -16,21 +16,21 @@ public static class BFS
         }
     }
 
-    public static bool CanTraverse(this Graph g, Node source, Node target)
+    public static bool CanTraverse(this Graph g, Node<int> source, Node<int> target)
     {
         char s = MapChar(g.GetHeight(source));
         char t = MapChar(g.GetHeight(target));
         return t - s <= 1;
     }
 
-    public static bool CanDescend(this Graph g, Node source, Node target)
+    public static bool CanDescend(this Graph g, Node<int> source, Node<int> target)
     {
         char s = MapChar(g.GetHeight(source));
         char t = MapChar(g.GetHeight(target));
         return t - s >= -1;
     }
 
-    public static int EdgeWeight(this Graph g, Node source, Node target)
+    public static int EdgeWeight(this Graph g, Node<int> source, Node<int> target)
     {
         char s = MapChar(g.GetHeight(source));
         char t = MapChar(g.GetHeight(target));

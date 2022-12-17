@@ -14,7 +14,7 @@ Console.WriteLine($"Part 1: {result1}");
 Console.WriteLine($"Part 2: {result2}");
 class Helpers
 {
-    public static IEnumerable<Node> GetAllInDirection(Graph g, Node v, (int x, int y) dir)
+    public static IEnumerable<Node<int>> GetAllInDirection(Graph g, Node<int> v, (int x, int y) dir)
     {
         v += dir;
         while (g.InGrid(v))
@@ -24,20 +24,20 @@ class Helpers
         }
     }
 
-    public static bool VisibleInDirection(Graph g, Node v, (int x, int y) dir)
+    public static bool VisibleInDirection(Graph g, Node<int> v, (int x, int y) dir)
     {
         return !GetAllInDirection(g, v, dir)
             .Where(w => g.GetHeight(w) >= g.GetHeight(v))
             .Any();
     }
-    public static bool Visible(Graph g, Node v)
+    public static bool Visible(Graph g, Node<int> v)
     {
-        return Node.Directions
+        return Node<int>.Directions
             .Where(dir => VisibleInDirection(g, v, dir))
             .Any();
     }
 
-    public static int Scenic(Graph g, IEnumerable<Node> sightLine, char height)
+    public static int Scenic(Graph g, IEnumerable<Node<int>> sightLine, char height)
     {
         return sightLine.Select((tree, index) => (tree, index))
             .Where(item => g.GetHeight(item.tree) >= height)
@@ -45,10 +45,10 @@ class Helpers
             .FirstOrDefault(sightLine.Count());
     }
 
-    public static int Scenic(Graph g, Node v)
+    public static int Scenic(Graph g, Node<int> v)
     {
         var height = g.GetHeight(v);
-        return Node.Directions
+        return Node<int>.Directions
             .Select(dir => GetAllInDirection(g, v, dir))
             .Select(sightLine => Scenic(g, sightLine, height))
             .Aggregate((acc, item) => acc * item);

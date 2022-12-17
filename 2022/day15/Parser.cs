@@ -10,22 +10,22 @@ public static class Parsers
         from number in Parse.Number
         select int.Parse(number) * (op.IsDefined ? -1 : 1);
 
-    public static readonly Parser<Node> Node =
+    public static readonly Parser<Node<int>> Node =
         from _1 in Parse.String("x=")
         from x in Int
         from _2 in Parse.Char(',').Token()
         from _3 in Parse.String("y=")
         from y in Int
-        select new Node { X = x, Y = y };
+        select new Node<int> { X = x, Y = y };
 
-    public static readonly Parser<(Node sensor, Node beacon)> Pair =
+    public static readonly Parser<(Node<int> sensor, Node<int> beacon)> Pair =
         from header in Parse.String("Sensor at ")
         from sensor in Node
         from mid in Parse.String(": closest beacon is at ")
         from beacon in Node
         select (sensor, beacon);
 
-    public static (Node sensor, Node beacon) FromText(string text)
+    public static (Node<int> sensor, Node<int> beacon) FromText(string text)
     {
         return Pair.Parse(text);
     }

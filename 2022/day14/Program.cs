@@ -17,7 +17,7 @@ Console.WriteLine($"Parsing took {sw.ElapsedMilliseconds} ms");
 // Part 1:
 sw.Restart();
 Cave cave = new(rockLines, withFloor: false);
-var source = new Node { X = 500, Y = 0 };
+var source = new Node<int> { X = 500, Y = 0 };
 int counter = 0;
 while (cave.DropSand(source) != BlockedEnum.Abyss)
 {

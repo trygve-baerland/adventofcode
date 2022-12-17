@@ -11,7 +11,7 @@ var pairs = File.OpenText("input.txt")
 var sensors = pairs.Select(item => (item.sensor, item.dist)).ToList();
 
 //var beacons = pairs.Select(item => item.beacon).Distinct().ToList();
-var beacons = new HashSet<Node>();
+var beacons = new HashSet<Node<int>>();
 foreach (var (sensor, beacon, dist) in pairs)
 {
     beacons.Add(beacon);

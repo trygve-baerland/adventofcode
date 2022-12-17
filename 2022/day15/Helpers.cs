@@ -2,7 +2,6 @@ using Utils;
 
 namespace Day15;
 
-
 public class Day15Helpers
 {
     public static int L1((int x, int y) tv)
@@ -10,19 +9,19 @@ public class Day15Helpers
         return Math.Abs(tv.x) + Math.Abs(tv.y);
     }
 
-    public static int L1Dist(Node lhs, Node rhs)
+    public static int L1Dist(Node<int> lhs, Node<int> rhs)
     {
         return L1(rhs - lhs);
     }
 
-    public static bool CanNotHaveBeacon(Node node, IEnumerable<(Node sensor, int dist)> sensors)
+    public static bool CanNotHaveBeacon(Node<int> node, IEnumerable<(Node<int> sensor, int dist)> sensors)
     {
         return sensors
             .Where(item => L1Dist(node, item.sensor) <= item.dist)
             .Any();
     }
 
-    public static IEnumerable<Node> FeasibleNodes(IEnumerable<(Node sensor, int dist)> pairs, HashSet<Node> beacons)
+    public static IEnumerable<Node<int>> FeasibleNodes(IEnumerable<(Node<int> sensor, int dist)> pairs, HashSet<Node<int>> beacons)
     {
         int minY = pairs.Select(pair => pair.sensor.Y - pair.dist).Min();
         int maxY = pairs.Select(pair => pair.sensor.Y + pair.dist).Max();
@@ -34,7 +33,7 @@ public class Day15Helpers
             }
         }
     }
-    public static IEnumerable<Node> FeasibleNodes(IEnumerable<(Node sensor, int dist)> pairs, int y, HashSet<Node> beacons)
+    public static IEnumerable<Node<int>> FeasibleNodes(IEnumerable<(Node<int> sensor, int dist)> pairs, int y, HashSet<Node<int>> beacons)
     {
 
         foreach (var (sensor, dist) in pairs)
@@ -45,7 +44,7 @@ public class Day15Helpers
                 var D = dist - dy;
                 for (int x = sensor.X - D; x <= sensor.X + D; x++)
                 {
-                    var candidate = new Node { X = x, Y = y };
+                    var candidate = new Node<int> { X = x, Y = y };
                     if (!beacons.Contains(candidate))
                         yield return candidate;
                 }
@@ -53,10 +52,10 @@ public class Day15Helpers
         }
     }
 
-    public static IEnumerable<Node> SearchSignal((int min, int max) box, IEnumerable<(Node sensor, int dist)> pairs, HashSet<Node> beacons)
+    public static IEnumerable<Node<int>> SearchSignal((int min, int max) box, IEnumerable<(Node<int> sensor, int dist)> pairs, HashSet<Node<int>> beacons)
     {
         // Go though each sensor
-        HashSet<Node> visited = new();
+        HashSet<Node<int>> visited = new();
         foreach (var (sensor, dist) in pairs)
         {
             foreach (var node in EquiDistantNodes(sensor, dist + 1))
@@ -73,14 +72,14 @@ public class Day15Helpers
         }
     }
 
-    public static long TuningFrequency(Node node)
+    public static long TuningFrequency(Node<int> node)
     {
         return 4000000 * ((long)node.X) + node.Y;
     }
 
-    public static IEnumerable<Node> EquiDistantNodes(Node center, int dist)
+    public static IEnumerable<Node<int>> EquiDistantNodes(Node<int> center, int dist)
     {
-        var node = new Node
+        var node = new Node<int>
         {
             X = center.X - dist,
             Y = center.Y

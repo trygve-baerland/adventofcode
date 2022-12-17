@@ -11,11 +11,11 @@ public enum BlockedEnum
 public class Cave
 {
     private char[][] Array { get; set; }
-    private Node TopLeft { get; set; }
-    private Node BottomRight { get; set; }
-    public HashSet<Node> Blockers { get; } = new();
+    private Node<int> TopLeft { get; set; }
+    private Node<int> BottomRight { get; set; }
+    public HashSet<Node<int>> Blockers { get; } = new();
     private bool WithFloor { get; init; }
-    public Cave(IEnumerable<IEnumerable<Node>> rockLines, bool withFloor = false)
+    public Cave(IEnumerable<IEnumerable<Node<int>>> rockLines, bool withFloor = false)
     {
         // Get bounding box based on rock lines:
         WithFloor = withFloor;
@@ -36,8 +36,8 @@ public class Cave
         {
             maxY += 2;
         }
-        TopLeft = new Node { X = minX, Y = minY };
-        BottomRight = new Node { X = maxX, Y = maxY };
+        TopLeft = new Node<int> { X = minX, Y = minY };
+        BottomRight = new Node<int> { X = maxX, Y = maxY };
         // Initialize array:
         Array = Enumerable.Range(0, maxY - minY + 1)
             .Select(
@@ -50,15 +50,15 @@ public class Cave
         // Draw floor:
         if (withFloor)
         {
-            DrawRockLine(new List<Node>() {
-                new Node {
+            DrawRockLine(new List<Node<int>>() {
+                new Node<int> {
                     X = minX, Y = maxY
                 },
                 BottomRight
             });
         }
     }
-    public void DrawRockLine(IEnumerable<Node> rockLine)
+    public void DrawRockLine(IEnumerable<Node<int>> rockLine)
     {
         var enumerator = rockLine.GetEnumerator();
         if (!enumerator.MoveNext())
@@ -66,7 +66,7 @@ public class Cave
             return;
         }
         var prev = enumerator.Current;
-        Node next;
+        Node<int> next;
         while (enumerator.MoveNext())
         {
             next = enumerator.Current;
@@ -88,7 +88,7 @@ public class Cave
         Console.WriteLine($"Bounding box: {TopLeft} <-> {BottomRight}");
     }
 
-    public (int row, int col)? GetLocalCoords(Node node)
+    public (int row, int col)? GetLocalCoords(Node<int> node)
     {
         if (!(node >= TopLeft && node <= BottomRight))
         {
@@ -97,7 +97,7 @@ public class Cave
         return (node.Y - TopLeft.Y, node.X - TopLeft.X);
     }
 
-    public void ColorNode(Node node, char c)
+    public void ColorNode(Node<int> node, char c)
     {
         if (GetLocalCoords(node) is (int, int) x)
         {
@@ -106,7 +106,7 @@ public class Cave
     }
 
 
-    public BlockedEnum DropSand(Node start)
+    public BlockedEnum DropSand(Node<int> start)
     {
         var sandPos = start;
         BlockedEnum blocked = BlockedEnum.Free;
@@ -132,7 +132,7 @@ public class Cave
         return blocked;
     }
 
-    public BlockedEnum NotBlocked(Node node)
+    public BlockedEnum NotBlocked(Node<int> node)
     {
         if (Blockers.Contains(node))
         {
@@ -146,9 +146,9 @@ public class Cave
         return BlockedEnum.Free;
     }
 
-    public static List<(int x, int y)> DropDirections = new() { (0, 1), (-1, 1), (1, 1) };
+    public static readonly List<(int x, int y)> DropDirections = new() { (0, 1), (-1, 1), (1, 1) };
 
-    public IEnumerable<Node> GetNextNodes(Node node)
+    public IEnumerable<Node<int>> GetNextNodes(Node<int> node)
     {
         return DropDirections
             .Select(dir => node + dir)
