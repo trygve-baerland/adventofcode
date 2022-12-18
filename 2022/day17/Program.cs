@@ -32,7 +32,6 @@ int prevJetIndex = 0;
 int? repeatJetIndex = null;
 
 int bottomRockCount = 0;
-int repeatRockCount = 0;
 while (counter < maxCounter && shapes.MoveNext())
 {
     Console.Write($"{counter}\r");
@@ -43,21 +42,24 @@ while (counter < maxCounter && shapes.MoveNext())
     // Find where we have looped around next shape is a horizontal line:
     if (jetIndex < prevJetIndex && ((shapeIndex + 1) % 5 == 0))
     {
+        // If we haven't aøready found the starting sequence:
         if (repeatJetIndex is null)
         {
+            // This index is already repeated, so we've found our guy!
             if (jetIndexSet.Contains(jetIndex))
             {
                 bottomRockCount = dHeights.Count;
-                repeatJetIndex = jetIndex;
+                repeatJetIndex = jetIndex; // When we get back to this point, we feel sure that we've found our repeating period
             }
+            // Not yet, we move on:
             else
             {
                 jetIndexSet.Add(jetIndex);
             }
         }
+        // We back to where we started our repeat!!!!
         else if (jetIndex == repeatJetIndex)
         {
-            repeatRockCount = dHeights.Count - bottomRockCount;
             break;
         }
     }
@@ -67,11 +69,11 @@ Console.WriteLine($"Bottom Rock Count: {bottomRockCount}");
 Console.WriteLine($"Bottom Height: {dHeights.Take(bottomRockCount).Sum()}");
 
 var period = dHeights.Skip(bottomRockCount).ToList();
-Console.WriteLine($"Repeat Rock Count: {repeatRockCount}");
-Console.WriteLine($"Altnernative repeatHeight: {period.Sum()}");
+Console.WriteLine($"Repeat Rock Count: {period.Count}");
+Console.WriteLine($"Repeat Height: {period.Sum()}");
 
-var numFullRepeats = (maxCounter - bottomRockCount) / repeatRockCount;
-int numLastPart = (int)((maxCounter - bottomRockCount) % repeatRockCount);
+var numFullRepeats = (maxCounter - bottomRockCount) / period.Count;
+int numLastPart = (int)((maxCounter - bottomRockCount) % period.Count);
 var bottomHeight = dHeights.Take(bottomRockCount).Sum();
 long height = bottomHeight + numFullRepeats * period.Sum() + period.Take(numLastPart).Sum();
 Console.WriteLine($"Part 2: {height}");
