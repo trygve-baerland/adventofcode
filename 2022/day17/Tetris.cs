@@ -23,30 +23,21 @@ public class Board
         }
     }
 
-    public void InsertShape(Shape shape, IEnumerator<Move> moves)
+    public (long newHeight, int jetIndex) InsertShape(Shape shape, IEnumerator<(Move move, int index)> moves)
     {
         // Get starting position:
+        var height = Height;
         var pos = new Node<long>
         {
             X = 2,
             Y = -Height - 4
         };
-        /*
-        // We use DFS Iterative to get to where we need to be:
-        GraphSearch.DFSIterative<(Node<long> node, Shape shape)>(
-            source: (pos, shape),
-            adjacentNodes: state => GetMoves(state, moves),
-            postVisitor: state =>
-            {
-                AddBlock(state.node, state.shape);
-                return true;
-            }
-        );
-        */
+
+        int jetIndex = 0;
         while (moves.MoveNext())
         {
             // Move left or right:
-            var move = moves.Current;
+            (var move, jetIndex) = moves.Current;
             (int x, int y) dir = move switch
             {
                 Move.Left => (-1, 0),
@@ -65,6 +56,9 @@ public class Board
                 break;
             }
         }
+        // We return the increase in height:
+        var newHeight = Math.Max(-pos.Y - shape.Offsets.Select(o => o.y).Min(), height);
+        return (newHeight - height, jetIndex);
     }
 
     public IEnumerable<(Node<long> node, Shape shape)> GetMoves((Node<long> node, Shape shape) state, IEnumerator<Move> moves)
@@ -176,4 +170,13 @@ public class Shape
             Width = 2
         }
     };
+}
+
+public static class PeriodHelpers
+{
+    public static bool IsPeriodical(List<long> values)
+    {
+        int period = values.Count / 2;
+        return !values.Take(period).Zip(values.Skip(period)).Select(item => item.First != item.Second).Any();
+    }
 }
