@@ -58,4 +58,42 @@ public static class GraphSearch
         }
         return false;
     }
+
+    public static void BFSIterative<TNode>(
+        List<TNode> nodes,
+        Func<TNode, IEnumerable<TNode>> adjacentNodes,
+        Action<TNode> visitor,
+        Action componentVisitor
+    )
+    {
+        var toVisit = new Queue<TNode>();
+        var explored = new HashSet<TNode>();
+        foreach (var node in nodes)
+        {
+            //Console.WriteLine($"Starting on node {node}");
+            // See if node has already been explored, i.e. we don't care:
+            if (!explored.Contains(node))
+            {
+                Console.WriteLine($"Starting on new component {node}");
+                explored.Add(node);
+                // We do a BFS search on this node:
+                toVisit.Enqueue(node);
+                while (toVisit.TryDequeue(out var item))
+                {
+                    visitor(item);
+                    // Go through each adjacent node:
+                    foreach (var neighbour in adjacentNodes(item))
+                    {
+                        if (!explored.Contains(neighbour))
+                        {
+                            explored.Add(neighbour);
+                            toVisit.Enqueue(neighbour);
+                        }
+                    }
+                }
+                componentVisitor();
+            }
+
+        }
+    }
 }

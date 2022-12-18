@@ -26,6 +26,16 @@ where T : INumber<T>, IBitwiseOperators<T, T, T>, IConvertible
         };
     }
 
+    public static Node3D<T> operator -(Node3D<T> lhs, (T x, T y, T z) rhs)
+    {
+        return new Node3D<T>
+        {
+            X = lhs.X - rhs.x,
+            Y = lhs.Y - rhs.y,
+            Z = lhs.Z - rhs.z
+        };
+    }
+
     public static bool operator ==(Node3D<T> lhs, Node3D<T> rhs)
     {
         return lhs.X == rhs.X && lhs.Y == rhs.Y && lhs.Z == rhs.Z;
@@ -53,11 +63,25 @@ where T : INumber<T>, IBitwiseOperators<T, T, T>, IConvertible
 
     #endregion Operators
     #region Misc
-    public static IEnumerable<(int x, int y, int z)> Directions { get; } = new List<(int x, int y, int z)>
+    public static List<(int x, int y, int z)> Directions { get; } = new List<(int x, int y, int z)>
         { (-1, 0, 0), (1, 0, 0),
           (0, -1, 0), (0, 1, 0),
           (0, 0, -1), (0, 0, 1)
         };
+
+    public static IEnumerable<(int x, int y, int z)> XDirections { get; } = new List<(int x, int y, int z)>()
+    {
+        (-1, 0, 0), (1, 0, 0)
+    };
+
+    public static IEnumerable<(int x, int y, int z)> YDirections { get; } = new List<(int x, int y, int z)>()
+    {
+        (0, -1, 0), (0, 1, 0)
+    };
+    public static IEnumerable<(int x, int y, int z)> ZDirections { get; } = new List<(int x, int y, int z)>()
+    {
+        (0, 0, -1), (0, 0, 1)
+    };
 
     public override bool Equals(object? obj)
     {

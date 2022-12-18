@@ -89,5 +89,6 @@ where T : INumber<T>, IBitwiseOperators<T, T, T>, IConvertible
         }
 
     }
+
     #endregion Misc
 }
