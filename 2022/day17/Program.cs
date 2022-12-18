@@ -2,9 +2,13 @@
 using Day17;
 
 // Parse input:
-var moves = TetrisParser.MovesFromText(File.OpenText("input.txt")
+var movesList = TetrisParser.MovesFromText(File.OpenText("input.txt")
     .GetLines()
-    .First())
+    .First());
+
+Console.WriteLine($"Number of moves are {movesList.Count()}");
+
+var moves = movesList
     .Repeat()
     .GetEnumerator();
 
@@ -17,7 +21,8 @@ var board = new Board()
 
 // Make some moves:
 long counter = 0;
-while (counter < 1000000000000 && shapes.MoveNext())
+long maxCounter = 2022; //1000000000000;
+while (counter < maxCounter && shapes.MoveNext())
 {
     Console.Write($"{counter}\r");
     var shape = shapes.Current;

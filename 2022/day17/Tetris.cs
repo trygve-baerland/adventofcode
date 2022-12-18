@@ -1,4 +1,5 @@
 using Utils;
+using Utils.Graphs;
 namespace Day17;
 
 public enum Move
@@ -30,6 +31,18 @@ public class Board
             X = 2,
             Y = -Height - 4
         };
+        /*
+        // We use DFS Iterative to get to where we need to be:
+        GraphSearch.DFSIterative<(Node<long> node, Shape shape)>(
+            source: (pos, shape),
+            adjacentNodes: state => GetMoves(state, moves),
+            postVisitor: state =>
+            {
+                AddBlock(state.node, state.shape);
+                return true;
+            }
+        );
+        */
         while (moves.MoveNext())
         {
             // Move left or right:
@@ -54,10 +67,37 @@ public class Board
         }
     }
 
+    public IEnumerable<(Node<long> node, Shape shape)> GetMoves((Node<long> node, Shape shape) state, IEnumerator<Move> moves)
+    {
+        //
+        if (moves.MoveNext())
+        {
+            var move = moves.Current;
+            (int x, int y) dir = move switch
+            {
+                Move.Left => (-1, 0),
+                Move.Right => (1, 0),
+                _ => throw new Exception($"Invalid move '{move}'")
+            };
+            // We first try diagonal
+            var candidate = state.node + (dir.x, 1);
+            if (IsFree(candidate, state.shape))
+                yield return (candidate, state.shape);
+            // Then we try directly down:
+            candidate = state.node + (0, 1);
+            if (IsFree(candidate, state.shape))
+                yield return (candidate, state.shape);
+            // Next we try just to the left or right
+            candidate = state.node + dir;
+            if (IsFree(candidate, state.shape))
+                yield return (candidate, state.shape);
+        }
+    }
+
     public bool IsFree(Node<long> node, Shape shape)
     {
-        return shape.GetNodes(node)
-            .All(point => point.X >= 0 && point.X < Width && point.Y < 0 && !Blockers.Contains(point));
+        return node.X >= 0 && node.X + shape.Width - 1 < Width && node.Y < 0 &&
+            shape.GetNodes(node).All(point => !Blockers.Contains(point));
     }
 
     public void Print()
@@ -92,29 +132,48 @@ public class Board
 public class Shape
 {
     public List<(long x, long y)> Offsets { get; set; } = new();
+    public int Width { get; set; }
 
     public IEnumerable<Node<long>> GetNodes(Node<long> node) => Offsets.Select(offset => node + offset);
 
     public static readonly List<Shape> Shapes = new() {
         // Horizontal line:
+        // ####
         new Shape () {
-            Offsets = new() {(0,0), (1,0), (2,0), (3,0)}
+            Offsets = new() {(0,0), (1,0), (2,0), (3,0)},
+            Width = 4
         },
         // Cross:
+        //    #
+        //   ###
+        //    #
         new Shape (){
-            Offsets = new() {(1,0), (0,-1), (1, -1), (2, -1), (1, -2)}
+            Offsets = new() {(1,0), (0,-1), (1, -1), (2, -1), (1, -2)},
+            Width = 3
         },
         // Mirrored L
+        //     #
+        //     #
+        //   ###
         new Shape() {
-            Offsets = new() {(0,0), (1,0), (2,0), (2,-1), (2,-2)}
+            Offsets = new() {(0,0), (1,0), (2,0), (2,-1), (2,-2)},
+            Width = 3
         },
         // Vertical line
+        //   #
+        //   #
+        //   #
+        //   #
         new Shape() {
-            Offsets = new() {(0, 0), (0, -1), (0, -2), (0, -3)}
+            Offsets = new() {(0, 0), (0, -1), (0, -2), (0, -3)},
+            Width = 1
         },
         // Square
+        //   ##
+        //   ##
         new Shape() {
-            Offsets = new() {(0,0), (1,0), (0, -1), (1, -1)}
+            Offsets = new() {(0,0), (1,0), (0, -1), (1, -1)},
+            Width = 2
         }
     };
 }
