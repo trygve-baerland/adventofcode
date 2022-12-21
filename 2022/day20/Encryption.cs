@@ -3,42 +3,76 @@ namespace Day20;
 
 public class Element
 {
-    public int Value { get; set; }
-    public int Position { get; set; }
-    public int InitialPosition { get; init; }
+    public long Value { get; set; }
+    public long Position { get; set; }
+    public long InitialPosition { get; init; }
 
-    public void Update(int step)
+    public void Update(int step, int N)
     {
-        Position += step;
+        Position = Helpers.MathMod(Position + step, N);
     }
 }
 
+public class PeriodicInterval
+{
+    public long From { get; set; }
+    public long To { get; set; }
+    public long N { get; set; }
+    private long D { get; init; }
+
+    public PeriodicInterval(long from, long to, long N)
+    {
+        this.N = N;
+        From = from;
+        To = to;
+        D = Helpers.MathMod(To - From, N);
+    }
+
+    public bool Contains(long value)
+    {
+        return Helpers.MathMod(value - From, N) <= D;
+    }
+}
+
+
+
 public static class Decryption
 {
-    public static List<Element> MixDecrypt(List<Element> elements)
+    public static List<Element> MixDecrypt(List<Element> elements, int repetitions = 1)
     {
-        Console.WriteLine("Initial list:");
-        PrintList(elements);
+        //Console.WriteLine("Initial list:");
+        //PrintList(elements);
         int N = elements.Count;
-        foreach (var element in elements)
+        foreach (var _ in Enumerable.Range(0, repetitions))
         {
-            Console.WriteLine($"Updating using value {element.Value}");
-            // Update Position of element
-            var oldPos = element.Position;
-            element.Position = Helpers.MathMod(element.Position + element.Value, N);
-            // everything between [min, max] is updated:
-            var step = Math.Sign(oldPos - element.Position);
-            var min = Math.Min(oldPos, element.Position);
-            var max = Math.Max(oldPos, element.Position);
-            // Update positions for every element:
-            foreach (var toUpdate in elements)
+            foreach (var element in elements)
             {
-                if (toUpdate.Position >= min && toUpdate.Position <= max && toUpdate.InitialPosition != element.InitialPosition)
+                //Console.WriteLine($"Updating using value {element.Value}");
+                // Update Position of element
+                var oldPos = element.Position;
+                var offset = Math.Sign(element.Value) * (Math.Abs(element.Value) % (N - 1));
+                element.Position = Helpers.MathMod(element.Position + offset, N);
+                // everything between [min, max] is updated:
+                var step = -Math.Sign(element.Value);
+                PeriodicInterval interval;
+                if (step < 0)
                 {
-                    toUpdate.Update(step);
+                    interval = new PeriodicInterval(oldPos, element.Position, N);
                 }
+                else
+                {
+                    interval = new PeriodicInterval(element.Position, oldPos, N);
+                }
+                // Update positions for every element:
+                foreach (var toUpdate in elements)
+                {
+                    if (interval.Contains(toUpdate.Position) && toUpdate.InitialPosition != element.InitialPosition)
+                    {
+                        toUpdate.Update(step, N);
+                    }
+                }
+                //PrintList(elements);
             }
-            PrintList(elements);
         }
         return elements;
     }
@@ -49,8 +83,15 @@ public static class Decryption
         string.Join(
             ", ",
         elements.OrderBy(item => item.Position)
-                .Select(element => element.Value)
+                .Select(element => (element.Value, element.Position))
         )
         );
+    }
+
+    public static long GetValueInPosition(List<Element> elements, long pos)
+    {
+        int N = elements.Count;
+        pos = Helpers.MathMod(pos, N);
+        return elements.Where(item => item.Position == pos).Select(item => item.Value).First();
     }
 }

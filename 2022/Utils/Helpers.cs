@@ -1,3 +1,4 @@
+using System.Numerics;
 namespace Utils;
 
 public static class Helpers
@@ -12,7 +13,8 @@ public static class Helpers
         Enumerable.Range(0, times).ForEach(index => action(index));
     }
 
-    public static int MathMod(int a, int b)
+    public static T MathMod<T>(T a, T b)
+    where T : INumber<T>
     {
         return ((a % b) + b) % b;
     }
