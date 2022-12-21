@@ -11,4 +11,9 @@ public static class Helpers
     {
         Enumerable.Range(0, times).ForEach(index => action(index));
     }
+
+    public static int MathMod(int a, int b)
+    {
+        return ((a % b) + b) % b;
+    }
 }
