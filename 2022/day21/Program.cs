@@ -27,6 +27,7 @@ foreach (var dir in trace)
 {
     // Invert current monkey:
     target = monkey.Invert(dir, target);
+    // Update to next monkey:
     monkey = monkey.GetChild(dir);
 }
 Console.WriteLine(monkey);
