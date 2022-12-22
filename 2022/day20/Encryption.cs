@@ -50,6 +50,8 @@ public static class Decryption
                 //Console.WriteLine($"Updating using value {element.Value}");
                 // Update Position of element
                 var oldPos = element.Position;
+                // If you move N-1 either to the left or the right, the array remains unchanged, save for a right- or left shift, respectively.
+                // Taking this account, the new position of our element will be its value % (N-1)
                 var offset = Math.Sign(element.Value) * (Math.Abs(element.Value) % (N - 1));
                 element.Position = Helpers.MathMod(element.Position + offset, N);
                 // everything between [min, max] is updated:
