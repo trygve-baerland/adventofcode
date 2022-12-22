@@ -8,27 +8,20 @@ File.OpenText("input.txt")
         ShoutingMonkeyParser.FromText(line);
     });
 
+var root = ShoutingMonkey.AllMonkeys["root"];
 // Part 1:
-var part1 = ShoutingMonkey.AllMonkeys["root"].Value;
+var part1 = root.Value;
 Console.WriteLine($"Part 1: {part1}");
 
 // Part 2:
 // Get trace to "humn":
-var root = ShoutingMonkey.AllMonkeys["root"];
 var trace = root.Find("humn");
-
 Console.WriteLine(string.Join(", ", trace));
 
-// Main loop:
-var monkey = root;
-monkey.Operation = Op.Compare;
-decimal target = 0;
-foreach (var dir in trace)
-{
-    // Invert current monkey:
-    target = monkey.Invert(dir, target);
-    // Update to next monkey:
-    monkey = monkey.GetChild(dir);
-}
+root.Operation = Op.Compare;
+var (monkey, part2) = trace.Aggregate(
+    (root, (decimal)0),
+    (acc, dir) => (acc.root.GetChild(dir), acc.root.Invert(dir, acc.Item2))
+);
 Console.WriteLine(monkey);
-Console.WriteLine($"Part 2: {target}");
+Console.WriteLine($"Part 2: {part2}");
