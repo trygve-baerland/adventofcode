@@ -61,4 +61,10 @@ public static class Extensions
             }
         }
     }
+
+    public static IEnumerable<T> Chain<T>(this IEnumerable<T> source, IEnumerable<T> other)
+    {
+        foreach (var x in source) yield return x;
+        foreach (var y in other) yield return y;
+    }
 }
