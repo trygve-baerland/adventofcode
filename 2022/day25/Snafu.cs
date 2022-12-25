@@ -11,14 +11,13 @@ public class Snafu
         Digits = text.ToList();
     }
 
-    public long ToInt()
-    {
-        // Start with the lowest Digit:
-        return Digits.Reverse()
-            .Aggregate<char, (long total, long denom), long>((total: 0, denom: 1),
-                (acc, item) => (checked(acc.total + CharValue(item) * acc.denom), checked(acc.denom * 5)),
-                item => item.total);
-    }
+    public long ToInt() => Digits
+        .Reverse()
+        .Aggregate<char, (long total, long denom), long>(
+            seed: (total: 0, denom: 1),
+            func: (acc, item) => (checked(acc.total + CharValue(item) * acc.denom), checked(acc.denom * 5)),
+            resultSelector: item => item.total
+        );
 
     public static long CharValue(char c) => c switch
     {
