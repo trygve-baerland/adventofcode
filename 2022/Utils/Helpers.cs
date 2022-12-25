@@ -18,4 +18,22 @@ public static class Helpers
     {
         return ((a % b) + b) % b;
     }
+
+    public static T Gfc<T>(T a, T b)
+    where T : INumber<T>
+    {
+        while (b != T.Zero)
+        {
+            T temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    public static T Lcm<T>(T a, T b)
+    where T : INumber<T>
+    {
+        return a / Gfc(a, b) * b;
+    }
 }
