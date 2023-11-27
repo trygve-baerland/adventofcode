@@ -3,6 +3,7 @@ use std::env;
 use puzzle::Puzzle;
 
 mod puzzle;
+mod utils;
 mod year2021;
 
 fn main() {
