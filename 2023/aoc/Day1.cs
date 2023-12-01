@@ -11,7 +11,7 @@ public sealed class Day1 : IPuzzle
     public void Part1()
     {
         var result = ActualData
-          .Select( l => GetNumber( l, new Regex( @"\d" ), new Regex( @"\d" ) ) )
+          .Select( l => GetNumber( l, RegexPart1 ) )
           .Sum();
         Console.WriteLine( $"Result: {result}" );
     }
@@ -19,18 +19,21 @@ public sealed class Day1 : IPuzzle
     public void Part2()
     {
         var result = ActualData
-          .Select( l => GetNumber( l, Matcher, LastMatcher ) )
+          .Select( l => GetNumber( l, RegexPart2 ) )
           .Sum();
         Console.WriteLine( $"Result: {result}" );
     }
 
-    private Regex Matcher { get; } = new( @"\d|one|two|three|four|five|six|seven|eight|nine" );
-    private Regex LastMatcher { get; } = new( @"\d|one|two|three|four|five|six|seven|eight|nine", RegexOptions.RightToLeft );
+    private Regex RegexPart1 { get; } = new( @"(?<number>\d)" );
+    private Regex RegexPart2 { get; } = new( @"(?=(?<number>\d|one|two|three|four|five|six|seven|eight|nine))" );
 
-    private int GetNumber( string line, Regex firstRegex, Regex lastRegex ) =>
-        10 * GetDigit( line, firstRegex ) + GetDigit( line, lastRegex );
+    private int GetNumber( string line, Regex regex )
+    {
+        var matches = regex.Matches( line );
+        return 10 * ConvertDigit( Digit( matches.First() ) ) + ConvertDigit( Digit( matches.Last() ) );
+    }
 
-    private int GetDigit( string line, Regex regex ) => ConvertDigit( regex.Match( line ).Value );
+    private static string Digit( Match match ) => match.Groups["number"].Value;
 
     private int ConvertDigit( string number )
     {
@@ -51,5 +54,4 @@ public sealed class Day1 : IPuzzle
             };
         }
     }
-
 }
