@@ -61,38 +61,30 @@ public class Game( int id, List<RGB> sets )
 static class Helpers
 {
     #region parsing stuff
-    private static readonly Parser<int> Number =
-        from number in Parse.Number
-        select int.Parse( number );
+    private static readonly Parser<int> Number = Parse.Number.Select( int.Parse );
 
     private static Parser<(string color, int value)> Color( string colorName ) =>
-        from number in Number
-        from _ in Parse.Char( ' ' )
-        from color in Parse.String( colorName )
-        select (String.Concat( color ), number);
+        Number.Then( number => Parse.Char( ' ' ).Select( _ => number ) )
+            .Then( number => Parse.String( colorName ).Select( color => (String.Concat( color ), number) ) )
+            .Select( item => item );
 
     private static Parser<RGB> Set =
-        from valDict in (from colors in Color( "red" )
-            .Or( Color( "green" ) )
-            .Or( Color( "blue" ) )
-            .DelimitedBy( Parse.Char( ',' ).Token() )
-                         select colors.ToDictionary())
-        select new RGB(
+        Color( "red" ).Or( Color( "green" ) ).Or( Color( "blue" ) ).DelimitedBy( Parse.Char( ',' ).Token() )
+        .Select( colors => colors.ToDictionary() )
+        .Select( valDict => new RGB(
             red: valDict.GetValueOrDefault( "red", defaultValue: 0 ),
             green: valDict.GetValueOrDefault( "green", defaultValue: 0 ),
             blue: valDict.GetValueOrDefault( "blue", defaultValue: 0 )
+            )
         );
 
     public static Parser<Game> Game =
-        from leading in Parse.String( "Game " )
-        from id in Number
-        from _ in Parse.Char( ':' ).Token()
-        from sets in Set.DelimitedBy( Parse.Char( ';' ).Token() )
-        select new Game(
-            id: id,
-            sets: sets.ToList()
+        Parse.String( "Game " )
+        .Then( _ => Number )
+        .Then( number => Parse.Char( ':' ).Token().Select( _ => number ) )
+        .Then( id => Set.DelimitedBy( Parse.Char( ';' ).Token() )
+            .Select( sets => new Game( id, sets.ToList() ) )
         );
-
 
     #endregion parsing stuff
 }
