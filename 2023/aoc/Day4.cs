@@ -19,28 +19,16 @@ public sealed class Day4 : IPuzzle
     public void Part2()
     {
         var cards = ActualData.ToList();
-        var hasScored = true;
-        var iteration = 0;
-        while ( hasScored )
+        var updates = Enumerable.Repeat( 1, cards.Count() ).ToArray();
+        foreach ( var card in cards )
         {
-            hasScored = false;
-            var updates = Enumerable.Repeat( 0, cards.Count() ).ToArray();
-            foreach ( var card in cards.Where( card => card.Counter >= iteration ) )
+            var numMatches = card.Matches();
+            foreach ( var id in Enumerable.Range( card.Id, numMatches ) )
             {
-                var numMatches = card.Matches();
-                foreach ( var id in Enumerable.Range( card.Id, numMatches ) )
-                {
-                    hasScored = true;
-                    updates[id] += 1;
-                }
+                updates[id] += updates[card.Id - 1];
             }
-            foreach ( var (card, update) in cards.Zip( updates ) )
-            {
-                card.Counter += update;
-            }
-            iteration += 1;
         }
-        var result = cards.Select( card => card.Counter ).Sum() + cards.Count();
+        var result = updates.Sum();
         Console.WriteLine( $"Result: {result}" );
     }
 }
@@ -51,8 +39,6 @@ public class LotteryCard( int id, IEnumerable<int> winningNumbers, IEnumerable<i
     public List<int> WinningNumbers { get; } = winningNumbers.ToList();
     public List<int> YourNumbers { get; } = yourNumbers.ToList();
 
-    public int Counter { get; set; } = 0;
-
     public static LotteryCard FromString( string input )
     {
         return Helpers.LotteryCard.Parse( input );
@@ -60,7 +46,7 @@ public class LotteryCard( int id, IEnumerable<int> winningNumbers, IEnumerable<i
 
     public override string ToString()
     {
-        return $"Card {Id}: {String.Join( ' ', WinningNumbers )} | {String.Join( ' ', YourNumbers )}";
+        return $"Card {Id}: {string.Join( ' ', WinningNumbers )} | {string.Join( ' ', YourNumbers )}";
     }
 
     public int Matches() => YourNumbers.Where( WinningNumbers.Contains ).Count();
