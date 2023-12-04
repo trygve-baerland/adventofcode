@@ -58,7 +58,7 @@ public class Game( int id, List<RGB> sets )
         Sets.Select( item => item.Blue ).Max()
     );
 }
-static class Helpers
+static partial class Helpers
 {
     #region parsing stuff
     private static readonly Parser<int> Number = Parse.Number.Select( int.Parse );
