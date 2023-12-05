@@ -11,17 +11,19 @@ var solutions = System.Reflection.Assembly.GetExecutingAssembly()
 
 Parser.Default.ParseArguments<CommandLineOptions>( args )
   .WithParsed( o => {
-    var solution = ( IPuzzle ) Activator.CreateInstance( solutions[$"Day{o.Day}"] )!;
-    Console.WriteLine( "Part 1:" );
-    solution.Part1();
-    Console.WriteLine( "Part 2:" );
-    solution.Part2();
+      var solution = ( IPuzzle ) Activator.CreateInstance( solutions[$"Day{o.Day}"] )!;
+      Console.WriteLine( "Part 1:" );
+      solution.Part1();
+      Console.WriteLine( "===========================" );
+      Console.WriteLine( "Part 2:" );
+      solution.Part2();
+      Console.WriteLine( "===========================" );
   } )
   .WithNotParsed( errs => {
-    Console.WriteLine( "You stupid piece of shit." );
-    Console.WriteLine( "Tilgjengelige løsninger er:" );
-    foreach ( var name in solutions.Keys )
-    {
-      Console.WriteLine( $"\t{name}" );
-    }
+      Console.WriteLine( "You stupid piece of shit." );
+      Console.WriteLine( "Tilgjengelige løsninger er:" );
+      foreach ( var name in solutions.Keys )
+      {
+          Console.WriteLine( $"\t{name}" );
+      }
   } );
