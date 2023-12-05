@@ -27,6 +27,11 @@ public static class Extensions
         }
     }
 
+    public static StreamReader Stream( this string filename )
+    {
+        return File.OpenText( filename );
+    }
+
     public static IEnumerable<char> GetChars( this StreamReader reader )
     {
         while ( reader.Peek() >= 0 )
