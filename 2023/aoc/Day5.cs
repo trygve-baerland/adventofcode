@@ -1,5 +1,3 @@
-using System.ComponentModel.DataAnnotations;
-using System.Runtime.CompilerServices;
 using Sprache;
 using Utils;
 namespace AoC;
@@ -12,22 +10,9 @@ public sealed class Day5 : IPuzzle
     {
         var (seeds, mappings) = Helpers.InputFile.Parse( ActualData );
 
-        List<long> locations = [];
-        foreach ( var seed in seeds )
-        {
-            var sourceName = "seed";
-            var sourceValue = seed;
-            while ( sourceName != "location" )
-            {
-                Console.WriteLine( $"\t{sourceName}: {sourceValue}" );
-                sourceValue = mappings[sourceName].Map( sourceValue );
-                sourceName = mappings[sourceName].DestName;
-            }
-            Console.WriteLine( $"\t{sourceName}: {sourceValue}" );
-            Console.WriteLine( "-------------------------" );
-            locations.Add( sourceValue );
-        }
-        var result = locations.Min();
+        var result = seeds
+            .Select( seed => mappings.Aggregate( seed, ( x, mapping ) => mapping.Map( x ) ) )
+            .Min();
         Console.WriteLine( $"Result: {result}" );
     }
 
@@ -35,28 +20,17 @@ public sealed class Day5 : IPuzzle
     {
         var (seeds, mappings) = Helpers.InputFile.Parse( ActualData );
 
-        List<Interval> intervals = [];
-        // Create intervals:
-        var enumerator = seeds.GetEnumerator();
-        while ( enumerator.MoveNext() )
-        {
-            var start = enumerator.Current;
-            enumerator.MoveNext();
-            var count = enumerator.Current;
-            var interval = new Interval( start, start + count - 1 );
-            intervals.Add( interval );
-        }
-        // Let's map them a number of times:
-        var sourceName = "seed";
-        while ( sourceName != "location" )
-        {
-            var destName = mappings[sourceName].DestName;
-            var mapping = mappings[sourceName];
-            intervals = intervals.Select( I => mapping.Map( I ) ).SelectMany( x => x ).ToList();
-            sourceName = destName;
-        }
+        var result = seeds.Clump( 2 )
+            .Select( pair => new Interval( pair.First(), pair.First() + pair.Skip( 1 ).First() - 1 ) ) // Create intervals
+            .Select( interval =>
+                mappings.Aggregate(
+                    new[] { interval } as IEnumerable<Interval>,
+                    ( i, m ) => m.Map( i ) )
+            )
+            .Flatten()
+            .Select( i => i.Start )
+            .Min();
 
-        var result = intervals.Select( i => i.Start ).Min();
         Console.WriteLine( $"Result: {result}" );
 
     }
@@ -148,6 +122,7 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
         );
         return [.. newItems.OrderBy( item => item.SourceRangeStart )];
     }
+
     public override string ToString()
     {
         var result = $"{SourceName}-to-{DestName}:\n";
@@ -188,6 +163,9 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
             }
         }
     }
+
+    public IEnumerable<Interval> Map( IEnumerable<Interval> intervals ) =>
+        intervals.Select( i => Map( i ) ).Flatten();
 }
 
 public static partial class Helpers
@@ -219,12 +197,12 @@ public static partial class Helpers
             new Mapping( item.destName, item.sourceName, items )
         ) );
 
-    public static readonly Parser<(List<long> seeds, Dictionary<string, Mapping> mappings)> InputFile =
+    public static readonly Parser<(List<long> seeds, List<Mapping> mappings)> InputFile =
         SeedNumbers.Select( seeds => seeds.ToList() )
         .Then( seeds => Parse.LineEnd.AtLeastOnce().Select( _ => seeds ) )
         .Then( seeds =>
             Mapping.DelimitedBy( Parse.LineEnd.AtLeastOnce() )
-            .Select( mappings => (seeds, mappings: mappings.ToDictionary( item => item.SourceName, item => item )) )
+            .Select( mappings => (seeds, mappings: mappings.ToList()) )
         );
 
     #endregion parser stuff

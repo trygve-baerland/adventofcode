@@ -14,10 +14,6 @@ public sealed class Day6 : IPuzzle
     ).GetRaces();
     public void Part1()
     {
-        foreach ( var race in TestRaces )
-        {
-            Console.WriteLine( $"Race {race} ({race.WaysToWin()})" );
-        }
         var result = ActualRaces.Select( race => race.WaysToWin() )
             .Aggregate( ( x, item ) => x * item );
 
@@ -51,14 +47,17 @@ public class Race( long time, long distance )
     /// [x*] = sqrt(d)
     public long WaysToWin()
     {
-        // return Enumerable.Range( 0, ( int ) Time )
-        //    .Select( t => (Time - t) * t )
-        //    .Where( d => d > Distance )
-        //    .Count();
+        /*
+        return Enumerable.Range( 0, ( int ) Time )
+            .Select( t => (Time - t) * t )
+            .Where( d => d > Distance )
+            .Count();
+        */
         double D2 = Time * Time - 4 * Distance;
         if ( D2 < 0 ) throw new ArgumentException( $"Negative discriminant {D2}" );
         var D = Math.Sqrt( D2 );
-        return ( long ) (0.5 * (Math.Floor( D ) + Math.Ceiling( D ))) + 1;
+        var (x1, x2) = (0.5 * (Time - D), 0.5 * (Time + D));
+        return ( long ) (Math.Floor( x2 ) - Math.Floor( x1 ));
     }
 }
 public static partial class Helpers

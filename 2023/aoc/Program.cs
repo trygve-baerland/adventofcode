@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using AoC;
 using CommandLine;
 
@@ -12,11 +13,18 @@ var solutions = System.Reflection.Assembly.GetExecutingAssembly()
 Parser.Default.ParseArguments<CommandLineOptions>( args )
   .WithParsed( o => {
       var solution = ( IPuzzle ) Activator.CreateInstance( solutions[$"Day{o.Day}"] )!;
+      var sw = new Stopwatch();
       Console.WriteLine( "Part 1:" );
+      sw.Start();
       solution.Part1();
+      sw.Stop();
+      Console.WriteLine( $"Finished in {sw.ElapsedMilliseconds} ms" );
       Console.WriteLine( "===========================" );
       Console.WriteLine( "Part 2:" );
+      sw.Restart();
       solution.Part2();
+      sw.Stop();
+      Console.WriteLine( $"Finised in {sw.ElapsedMilliseconds} ms" );
       Console.WriteLine( "===========================" );
   } )
   .WithNotParsed( errs => {

@@ -78,4 +78,6 @@ public static class Extensions
         foreach ( var x in source ) yield return x;
         foreach ( var y in other ) yield return y;
     }
+
+    public static IEnumerable<T> Flatten<T>( this IEnumerable<IEnumerable<T>> source ) => source.SelectMany( x => x );
 }
