@@ -179,7 +179,6 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
                 // "end" might be contained in the current interval:
                 var xEnd = Math.Min( end, item.SourceRangeStart + item.RangeLength - 1 );
                 // If xEnd <= end we are done with this interval
-                // If end is also 
                 var newInterval = new Interval(
                     item.Map( start ),
                     item.Map( xEnd )
