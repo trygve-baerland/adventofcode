@@ -23,7 +23,7 @@ public sealed class Day8 : IPuzzle
 
         var result = mapping.Nodes.Keys.Where( key => key.EndsWith( 'A' ) )
             .Select( seed => mapping.CountFrom( directions.Repeat(), seed, name => name.EndsWith( 'Z' ) ) )
-            .Aggregate( seed: ( long ) 1, func: ( acc, x ) => Extensions.lcm( acc, x ) );
+            .Aggregate( seed: ( long ) 1, func: Utils.Math.LCM );
         Console.WriteLine( result );
     }
 }
@@ -59,28 +59,6 @@ public class NodeMapping( IEnumerable<Node> nodes )
     {
         Console.Write( $"{counter}\r" );
         return names.Select( name => Go( name, direction ) );
-    }
-
-    public List<(string endpoint, int step)> Part2Stuff( IEnumerable<char> directions, string start, Func<string, bool> atEnd )
-    {
-        var name = start;
-        int counter = 0;
-        List<(string endpoint, int counter)> visited = [];
-        foreach ( var d in directions )
-        {
-            name = Go( name, d );
-            counter++;
-            if ( atEnd( name ) )
-            {
-                if ( visited.Select( item => item.endpoint ).Contains( name ) )
-                {
-                    visited.Add( (name, counter) );
-                    return visited;
-                }
-                visited.Add( (name, counter) );
-            }
-        }
-        throw new Exception( "No solution found" );
     }
 
     public long CountFrom( IEnumerable<char> directions, string start, Func<string, bool> atEnd )

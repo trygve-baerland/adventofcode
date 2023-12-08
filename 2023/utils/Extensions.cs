@@ -90,21 +90,4 @@ public static class Extensions
             yield return result;
         }
     }
-
-    public static long gcf( long a, long b )
-    {
-        while ( b != 0 )
-        {
-            var temp = b;
-            b = a % b;
-            a = temp;
-        }
-        return a;
-    }
-
-    public static long lcm( long a, long b )
-    {
-        return (a / gcf( a, b )) * b;
-    }
-
 }

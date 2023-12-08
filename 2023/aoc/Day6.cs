@@ -55,9 +55,9 @@ public class Race( long time, long distance )
         */
         double D2 = Time * Time - 4 * Distance;
         if ( D2 < 0 ) throw new ArgumentException( $"Negative discriminant {D2}" );
-        var D = Math.Sqrt( D2 );
+        var D = System.Math.Sqrt( D2 );
         var (x1, x2) = (0.5 * (Time - D), 0.5 * (Time + D));
-        return ( long ) (Math.Floor( x2 ) - Math.Floor( x1 ));
+        return ( long ) (System.Math.Floor( x2 ) - System.Math.Floor( x1 ));
     }
 }
 public static partial class Helpers

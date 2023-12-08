@@ -152,7 +152,7 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
             if ( item.ContainsSource( start ) )
             {
                 // "end" might be contained in the current interval:
-                var xEnd = Math.Min( end, item.SourceRangeStart + item.RangeLength - 1 );
+                var xEnd = System.Math.Min( end, item.SourceRangeStart + item.RangeLength - 1 );
                 // If xEnd <= end we are done with this interval
                 var newInterval = new Interval(
                     item.Map( start ),
@@ -165,7 +165,7 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
     }
 
     public IEnumerable<Interval> Map( IEnumerable<Interval> intervals ) =>
-        intervals.Select( i => Map( i ) ).Flatten();
+        intervals.Select( Map ).Flatten();
 }
 
 public static partial class Helpers

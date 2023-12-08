@@ -54,7 +54,7 @@ public class LotteryCard( int id, IEnumerable<int> winningNumbers, IEnumerable<i
     public int Prize()
     {
         var count = YourNumbers.Where( WinningNumbers.Contains ).Count();
-        return count > 0 ? ( int ) Math.Pow( 2, count - 1 ) : 0;
+        return count > 0 ? ( int ) System.Math.Pow( 2, count - 1 ) : 0;
     }
 
 
