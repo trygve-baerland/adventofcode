@@ -80,4 +80,31 @@ public static class Extensions
     }
 
     public static IEnumerable<T> Flatten<T>( this IEnumerable<IEnumerable<T>> source ) => source.SelectMany( x => x );
+
+    public static IEnumerable<TResult> Accumulate<TSource, TResult>( this IEnumerable<TSource> source, TResult seed, Func<TResult, TSource, TResult> func )
+    {
+        var result = seed;
+        foreach ( var item in source )
+        {
+            result = func( result, item );
+            yield return result;
+        }
+    }
+
+    public static long gcf( long a, long b )
+    {
+        while ( b != 0 )
+        {
+            var temp = b;
+            b = a % b;
+            a = temp;
+        }
+        return a;
+    }
+
+    public static long lcm( long a, long b )
+    {
+        return (a / gcf( a, b )) * b;
+    }
+
 }
