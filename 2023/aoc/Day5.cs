@@ -171,7 +171,9 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
 public static partial class Helpers
 {
     #region parser stuff
-    public static readonly Parser<long> Long = Parse.Number.Select( long.Parse );
+    public static readonly Parser<long> Long =
+    Parse.Optional( Parse.Char( '-' ) ).Select( sign => sign.IsDefined ? -1 : 1 )
+        .Then( sign => Parse.Number.Select( num => sign * long.Parse( num ) ) );
     public static readonly Parser<IEnumerable<long>> SeedNumbers =
         Parse.String( "seeds: " )
         .Then( _ => Long.DelimitedBy( Parse.Char( ' ' ).AtLeastOnce() ) )
