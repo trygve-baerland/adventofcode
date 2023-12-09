@@ -9,13 +9,13 @@ public sealed class Day9 : IPuzzle
     public IEnumerable<History> ActualHistories { get; } = Helpers.AllHistories.Parse( string.Concat( "inputdata/day9.txt".Stream().GetChars() ) );
     public void Part1()
     {
-        var result = ActualHistories.Select( history => history.Extrapolate().after ).Sum();
+        var result = ActualHistories.Select( history => history.Extrapolate() ).Sum();
         Console.WriteLine( result );
     }
 
     public void Part2()
     {
-        var result = ActualHistories.Select( history => history.Extrapolate().before ).Sum();
+        var result = ActualHistories.Select( history => history.Reverse().Extrapolate() ).Sum();
         Console.WriteLine( result );
     }
 }
@@ -28,7 +28,9 @@ public class History( IEnumerable<long> values )
         return string.Join( ", ", Values );
     }
 
-    public (long before, long after) Extrapolate()
+    public History Reverse() => new History( Values.Reverse() );
+
+    public long Extrapolate()
     {
         // Get differences
         var stack = new Stack<long[]>();
@@ -40,14 +42,12 @@ public class History( IEnumerable<long> values )
             current = stack.Peek();
         }
         long after = 0;
-        long before = 0;
         while ( stack.Count > 0 )
         {
             var diffs = stack.Pop();
             after += diffs.Last();
-            before = diffs.First() - before;
         }
-        return (before, after);
+        return after;
     }
 }
 
