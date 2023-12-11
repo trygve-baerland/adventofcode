@@ -62,6 +62,18 @@ public static class Extensions
         }
     }
 
+    public static IEnumerable<(T, T)> Pairs<T>( this IEnumerable<T> source )
+    {
+        var asList = source.ToList();
+        foreach ( var i in Enumerable.Range( 0, asList.Count ) )
+        {
+            foreach ( var j in Enumerable.Range( i + 1, asList.Count - i - 1 ) )
+            {
+                yield return (asList[i], asList[j]);
+            }
+        }
+    }
+
     public static IEnumerable<T> Repeat<T>( this IEnumerable<T> source )
     {
         while ( true )
