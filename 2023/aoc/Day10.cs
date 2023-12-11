@@ -1,6 +1,3 @@
-using System.Numerics;
-using System.Runtime.CompilerServices;
-using System.Security.Cryptography;
 using Utils;
 
 namespace AoC;
@@ -47,9 +44,14 @@ public sealed class Day10 : IPuzzle
         };
         var current = start;
         bool returned = false;
+        long area = 0;
+        long circumference = 0;
         while ( !returned )
         {
             Point next = map.ConnectedPipes( current, map[current] ).Where( p => !loop.Contains( p ) ).FirstOrDefault( defaultValue: current );
+            // We know have an edge:
+            area += current.Cross( next );
+            circumference += 1;
             if ( next != current )
             {
                 loop.Add( next );
@@ -60,26 +62,12 @@ public sealed class Day10 : IPuzzle
                 returned = true;
             }
         }
-        Console.WriteLine( $"Loop: {loop.Count} elements" );
-        // With the calculation from part 1, we know what points are on the loop.
-        // Now, for every other point, we need to figure out if it's inside the loop or not.
-        // We go through all points:¨
-        long counter = 0;
-        foreach ( var p in map.Points() )
-        {
-            if ( loop.Contains( p ) )
-            {
-                Console.WriteLine( $"{p} is in the loop" );
-                continue;
-            }
-            var winding = Helpers.WindingNumber( loop, p );
-            if ( winding != 0 )
-            {
-                Console.WriteLine( $"{p} is inside the loop" );
-                counter++;
-            }
-        }
-        Console.WriteLine( counter );
+        area += current.Cross( start );
+        area = System.Math.Abs( area ) / 2;
+        circumference = circumference / 2;
+        var result = area - circumference + 1;
+        Console.WriteLine( result );
+
     }
 }
 
@@ -102,6 +90,7 @@ public struct Point( int x, int y )
     public static (int x, int y) operator -( Point p1, Point p2 ) => (p1.X - p2.X, p1.Y - p2.Y);
     public static bool operator ==( Point p1, Point p2 ) => p1.X == p2.X && p1.Y == p2.Y;
     public static bool operator !=( Point p1, Point p2 ) => !(p1 == p2);
+    public int Cross( Point p ) => X * p.Y - Y * p.X;
 }
 
 public class PipeMap( char[][] map )
