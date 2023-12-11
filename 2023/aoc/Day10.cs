@@ -1,3 +1,7 @@
+using System.Formats.Asn1;
+using System.Runtime.CompilerServices;
+using System.Transactions;
+using Microsoft.VisualBasic;
 using Utils;
 
 namespace AoC;
@@ -10,28 +14,11 @@ public sealed class Day10 : IPuzzle
     {
         var map = ActualMap;
         var start = map.GetStart();
-        // Let's set up for BFS:
-        var queue = new Queue<(int distance, Point p)>();
-        var visited = new HashSet<Point>();
-        var maxDistance = 0;
-        queue.Enqueue( (0, start) );
-        while ( queue.Count > 0 )
-        {
-            var (distance, p) = queue.Dequeue();
-            maxDistance = System.Math.Max( maxDistance, distance );
-            // Set point as visisted:
-            visited.Add( p );
-            // Get all directions from the current point:
-            foreach ( var n in map.ConnectedPipes( p, map[p] ) )
-            {
-                // If we haven't visited this point before, add it to the queue:
-                if ( !visited.Contains( n ) )
-                {
-                    queue.Enqueue( (distance + 1, n) );
-                }
-            }
-        }
-        Console.WriteLine( maxDistance );
+        var result = (start, start)
+            .FixPoint( item => (map.Next( item.Item1, item.Item2 ), item.Item1) )
+            .TakeWhile( item => !item.Item1.Equals( start ) || item.Item1.Equals( item.Item2 ) )
+            .Count() / 2;
+        Console.WriteLine( result );
     }
 
     public void Part2()
@@ -39,39 +26,25 @@ public sealed class Day10 : IPuzzle
         // Get points constituting the loop:
         var map = ActualMap;
         var start = map.GetStart();
-        var loop = new List<Point> {
-            start
-        };
-        var current = start;
-        bool returned = false;
-        long area = 0;
-        long circumference = 0;
-        while ( !returned )
-        {
-            Point next = map.ConnectedPipes( current, map[current] ).Where( p => !loop.Contains( p ) ).FirstOrDefault( defaultValue: current );
-            // We know have an edge:
-            area += current.Cross( next );
-            circumference += 1;
-            if ( next != current )
-            {
-                loop.Add( next );
-                current = next;
-            }
-            else
-            {
-                returned = true;
-            }
-        }
-        area += current.Cross( start );
-        area = System.Math.Abs( area ) / 2;
-        circumference = circumference / 2;
-        var result = area - circumference + 1;
-        Console.WriteLine( result );
+        var (area, circumference) = (start, start, 0L)
+            .FixPoint( item => (map.Next( item.Item1, item.Item2 ), item.Item1, item.Item3 + 1) )
+            .TakeWhile( item => !item.Item2.Equals( start ) || item.Item1.Equals( item.Item2 ) || item.Item3 < 3 )
+            .Skip( 1 )
+            .Aggregate(
+                seed: (0L, 0L),
+                func: ( acc, item ) => {
+                    var area = acc.Item1 + item.Item1.Cross( item.Item2 );
+                    var circumference = acc.Item2 + 1;
+                    return (area, circumference);
+                }
+            );
 
+        var result = (System.Math.Abs( area ) - circumference) / 2 + 1;
+        Console.WriteLine( result );
     }
 }
 
-public struct Point( int x, int y )
+public struct Point( int x, int y ) : IEquatable<Point>
 {
     public int X { get; } = x;
     public int Y { get; } = y;
@@ -88,9 +61,18 @@ public struct Point( int x, int y )
 
     public (int x, int y) ToTuple() => (X, Y);
     public static (int x, int y) operator -( Point p1, Point p2 ) => (p1.X - p2.X, p1.Y - p2.Y);
-    public static bool operator ==( Point p1, Point p2 ) => p1.X == p2.X && p1.Y == p2.Y;
-    public static bool operator !=( Point p1, Point p2 ) => !(p1 == p2);
+    public static bool operator ==( Point p1, Point p2 ) => p1.Equals( p2 );
+    public static bool operator !=( Point p1, Point p2 ) => !p1.Equals( p2 );
     public int Cross( Point p ) => X * p.Y - Y * p.X;
+
+    public bool Equals( Point other ) => X == other.X && Y == other.Y;
+
+    public override bool Equals( object? obj ) => obj is Point other && Equals( other );
+
+    public override int GetHashCode()
+    {
+        return X ^ Y;
+    }
 }
 
 public class PipeMap( char[][] map )
@@ -202,6 +184,10 @@ public class PipeMap( char[][] map )
                 throw new Exception( $"Unknown pipe type: {val}" );
         }
     }
+
+    public Point Next( Point current, Point prev ) =>
+        ConnectedPipes( current, this[current] ).Where( d => d != prev ).First();
+
 }
 
 public static partial class Helpers

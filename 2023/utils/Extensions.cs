@@ -102,4 +102,19 @@ public static class Extensions
             yield return result;
         }
     }
+
+    public static IEnumerable<T> FixPoint<T>( this T source, Func<T, T> func )
+    where T : IEquatable<T>
+    {
+        var current = source;
+        yield return current;
+
+        var next = func( current );
+        while ( !next.Equals( current ) )
+        {
+            current = next;
+            yield return current;
+            next = func( current );
+        }
+    }
 }
