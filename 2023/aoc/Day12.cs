@@ -15,14 +15,13 @@ public sealed class Day12 : IPuzzle
 
     public void Part2()
     {
-        long result = 0L;
-        foreach ( var record in TestRecords )
-        {
-            var newRecord = record.Repeat( 5 );
-            var num = newRecord.NumberOfValid();
-            Console.WriteLine( $"{record}: {num}" );
-            result += num;
-        }
+        var result = ActualRecords.AsParallel()
+        .Select( record => {
+            var num = record.Repeat( 5 ).NumberOfValid();
+            Console.WriteLine( $"{record} => {num}" );
+            return num;
+        } )
+        .Sum();
         Console.WriteLine( result );
     }
 }
@@ -101,7 +100,6 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         switch ( state.Current )
         {
             case '.':
-                // Continue to next
                 if ( state.InBlock )
                 {
                     // We are done consuming a block.
