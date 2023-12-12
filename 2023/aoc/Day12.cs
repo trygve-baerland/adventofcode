@@ -20,6 +20,7 @@ public sealed class Day12 : IPuzzle
         var result = ActualRecords.AsParallel()
         .Select( record => {
             var num = record.Repeat( 5 ).NumberOfValid();
+            //Console.WriteLine( $"{record} => {num}" );
             return num;
         } )
         .Sum();
@@ -102,6 +103,15 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         Cache[state] = result;
         return result;
     }
+
+    private bool MightBeValid( RecordValidatationState state )
+    {
+        // The number of remaing '#' or '?' we need are:
+        var remaining = Arrangement[state.ConsumedBlocks..].Sum();
+        var remainingSpaces = Arrangement.Length - state.ConsumedBlocks - 1;
+        var available = Conditions[state.Index..].Count( c => c == '#' || c == '?' );
+        return (remaining <= available) && (remainingSpaces + remaining <= Conditions.Length - state.Index);
+    }
     private long _ValidateFromState( RecordValidatationState state )
     {
         // Various validations to stop recursion:
@@ -118,6 +128,9 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
 
         // 2. We have consumed more blocks than allowed:
         if ( state.ConsumedBlocks > Arrangement.Length )
+            return 0;
+        // 3. Do we have enough remaining space:
+        if ( !MightBeValid( state ) )
             return 0;
 
         switch ( state.Current )
