@@ -9,7 +9,9 @@ public sealed class Day12 : IPuzzle
 
     public void Part1()
     {
-        long result = ActualRecords.Sum( record => record.NumberOfValid() );
+        long result = ActualRecords.Sum( record => {
+            return record.NumberOfValid();
+        } );
         Console.WriteLine( result );
     }
 
@@ -57,32 +59,43 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
     public long NumberOfValid()
     {
         return ValidateFromState(
-            new RecordValidatationState( Conditions[0], 0, false, 0, 0 )
+            new RecordValidatationState( Conditions[0], 0, 0 )
         );
+    }
+
+    public bool CanHaveBlock( int index, int blockSize )
+    {
+        return Enumerable.Range( index, blockSize ).All( CanBeBlock ) && CanBeSpace( index + blockSize );
+    }
+
+    public bool CanBeBlock( int index )
+    {
+        var val = AtIndex( index );
+        return val == '#' || val == '?';
+    }
+
+    public bool CanBeSpace( int index )
+    {
+        var val = AtIndex( index );
+        return val == '.' || val == '?';
+    }
+
+    public int StrideToNextBlock( int index )
+    {
+        var counter = index + 1;
+        while ( counter < Conditions.Length && !CanBeBlock( counter ) )
+        {
+            counter++;
+        }
+        return counter;
     }
 
     public long ValidateFromState( RecordValidatationState state )
     {
         // Various validations to stop recursion:
-
         // 1. When we're at the end:
-        if ( state.Index == Conditions.Length )
+        if ( state.Index >= Conditions.Length )
         {
-            if ( state.InBlock )
-            {
-                // We are done consuming a block.
-                // We need to verify that it had the proper length:
-                if ( state.ConsumedBlocks >= Arrangement.Length )
-                {
-                    return 0;
-                }
-                if ( state.Current == '#' ) state.CurrentlyConsumed++;
-                if ( state.CurrentlyConsumed != Arrangement[state.ConsumedBlocks] )
-                {
-                    return 0;
-                }
-                state.ConsumedBlocks++;
-            }
             // Check that all blocks have been consumed
             if ( state.ConsumedBlocks == Arrangement.Length )
             {
@@ -95,54 +108,36 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         if ( state.ConsumedBlocks > Arrangement.Length )
             return 0;
 
-        // Get next item:
-        char next = AtIndex( state.Index + 1 );
         switch ( state.Current )
         {
             case '.':
-                if ( state.InBlock )
-                {
-                    // We are done consuming a block.
-                    // We need to verify that it had the proper length:
-                    if ( state.CurrentlyConsumed != Arrangement[state.ConsumedBlocks] )
-                    {
-                        return 0;
-                    }
-                    return ValidateFromState(
-                        new RecordValidatationState( next, state.Index + 1, false, 0, state.ConsumedBlocks + 1 )
-                    );
-                }
+                // Next index:
+                var newIndex = StrideToNextBlock( state.Index );
+                var newChar = AtIndex( newIndex );
                 return ValidateFromState(
-                    new RecordValidatationState( next, state.Index + 1, false, 0, state.ConsumedBlocks )
+                    new RecordValidatationState( newChar, newIndex, state.ConsumedBlocks )
                 );
             case '#':
-                // Add to consumed
-                if ( state.InBlock )
+                // Check if we can have a block here:
+                if ( state.ConsumedBlocks < Arrangement.Length && CanHaveBlock( state.Index, Arrangement[state.ConsumedBlocks] ) )
                 {
-                    // If we haven't overconsumed, we can continue:
-                    if ( state.CurrentlyConsumed < Arrangement[state.ConsumedBlocks] )
-                    {
-                        return ValidateFromState(
-                            new RecordValidatationState( next, state.Index + 1, true, state.CurrentlyConsumed + 1, state.ConsumedBlocks )
-                        );
-                    }
-                    return 0;
+                    // Next index:
+                    var nextIndex = state.Index + Arrangement[state.ConsumedBlocks];
+                    return ValidateFromState(
+                        new RecordValidatationState( '.', nextIndex, state.ConsumedBlocks + 1 )
+                    );
                 }
                 else
                 {
-                    // Starting a new block:
-                    if ( state.ConsumedBlocks >= Arrangement.Length )
-                        return 0;
-                    return ValidateFromState(
-                        new RecordValidatationState( next, state.Index + 1, true, 1, state.ConsumedBlocks )
-                    );
+                    // We can't have a block here, so we can't consume it:
+                    return 0;
                 }
             case '?':
                 // Can be either . or #
                 return ValidateFromState(
-                    new RecordValidatationState( '.', state.Index, state.InBlock, state.CurrentlyConsumed, state.ConsumedBlocks )
+                    new RecordValidatationState( '#', state.Index, state.ConsumedBlocks )
                 ) + ValidateFromState(
-                    new RecordValidatationState( '#', state.Index, state.InBlock, state.CurrentlyConsumed, state.ConsumedBlocks )
+                    new RecordValidatationState( '.', state.Index, state.ConsumedBlocks )
                 );
 
             default:
@@ -154,8 +149,6 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
 public struct RecordValidatationState(
     char current,
     int index,
-    bool inBlock,
-    int CurrentlyConsumed,
     int consumedBlocks
 )
 {
@@ -163,11 +156,13 @@ public struct RecordValidatationState(
     public char Current { get; set; } = current;
     // Index of condition array we are at
     public int Index { get; set; } = index;
-    public bool InBlock { get; set; } = inBlock;
-    // Consumed in current block
-    public int CurrentlyConsumed { get; set; } = CurrentlyConsumed;
     // Number of blocks consumed
     public int ConsumedBlocks { get; set; } = consumedBlocks;
+
+    public override string ToString()
+    {
+        return $"Current: {Current}, Index: {Index}, ConsumedBlocks: {ConsumedBlocks}";
+    }
 }
 
 public static partial class Helpers
