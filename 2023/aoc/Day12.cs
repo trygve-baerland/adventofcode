@@ -1,3 +1,4 @@
+using System.Data;
 using Sprache;
 using Utils;
 namespace AoC;
@@ -28,6 +29,31 @@ public sealed class Day12 : IPuzzle
     }
 }
 
+public class LookupTable( char[] springConditions, int[] arrangement )
+{
+    private long?[][][] _table =
+        Enumerable.Range( 0, springConditions.Length + 1 ).Select( _ =>
+            Enumerable.Range( 0, 3 ).Select( _ =>
+                Enumerable.Repeat( ( long? ) null, arrangement.Length + 1 ).ToArray()
+            ).ToArray()
+        ).ToArray();
+
+    private int charToIndex( char c ) => c switch {
+        '.' => 0,
+        '#' => 1,
+        '?' => 2,
+        _ => throw new Exception( $"Invalid char '{c}'" )
+    };
+
+    public long? GetItem( RecordValidatationState state ) =>
+        _table[state.Index][charToIndex( state.Current )][state.ConsumedBlocks];
+
+    public void SetItem( RecordValidatationState state, long? value )
+    {
+        _table[state.Index][charToIndex( state.Current )][state.ConsumedBlocks] = value;
+    }
+}
+
 public class SpringRecord( char[] springConditions, int[] arrangement )
 {
     public char[] Conditions { get; } = springConditions;
@@ -44,7 +70,7 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         return new SpringRecord( newConditions, newArrangement );
     }
 
-    private Dictionary<RecordValidatationState, long> Cache { get; } = new Dictionary<RecordValidatationState, long>();
+    private LookupTable Cache2 { get; } = new LookupTable( springConditions, arrangement );
 
     public char AtIndex( int index )
     {
@@ -95,12 +121,12 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
 
     public long ValidateFromState( RecordValidatationState state )
     {
-        if ( Cache.ContainsKey( state ) )
+        if ( Cache2.GetItem( state ) is long value )
         {
-            return Cache[state];
+            return value;
         }
         var result = _ValidateFromState( state );
-        Cache[state] = result;
+        Cache2.SetItem( state, result );
         return result;
     }
 
