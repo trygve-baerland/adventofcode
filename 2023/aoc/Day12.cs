@@ -20,7 +20,6 @@ public sealed class Day12 : IPuzzle
         var result = ActualRecords.AsParallel()
         .Select( record => {
             var num = record.Repeat( 5 ).NumberOfValid();
-            Console.WriteLine( $"{record} => {num}" );
             return num;
         } )
         .Sum();
@@ -44,6 +43,8 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         return new SpringRecord( newConditions, newArrangement );
     }
 
+    private Dictionary<RecordValidatationState, long> Cache { get; } = new Dictionary<RecordValidatationState, long>();
+
     public char AtIndex( int index )
     {
         if ( index >= Conditions.Length )
@@ -56,12 +57,6 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         return $"{string.Concat( Conditions )} {string.Join( ',', Arrangement )}";
     }
 
-    public long NumberOfValid()
-    {
-        return ValidateFromState(
-            new RecordValidatationState( Conditions[0], 0, 0 )
-        );
-    }
 
     public bool CanHaveBlock( int index, int blockSize )
     {
@@ -90,7 +85,24 @@ public class SpringRecord( char[] springConditions, int[] arrangement )
         return counter;
     }
 
+    public long NumberOfValid()
+    {
+        return ValidateFromState(
+            new RecordValidatationState( Conditions[0], 0, 0 )
+        );
+    }
+
     public long ValidateFromState( RecordValidatationState state )
+    {
+        if ( Cache.ContainsKey( state ) )
+        {
+            return Cache[state];
+        }
+        var result = _ValidateFromState( state );
+        Cache[state] = result;
+        return result;
+    }
+    private long _ValidateFromState( RecordValidatationState state )
     {
         // Various validations to stop recursion:
         // 1. When we're at the end:
