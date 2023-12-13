@@ -18,10 +18,9 @@ public sealed class Day12 : IPuzzle
 
     public void Part2()
     {
-        var result = ActualRecords.AsParallel()
+        var result = ActualRecords
         .Select( record => {
             var num = record.Repeat( 5 ).NumberOfValid();
-            //Console.WriteLine( $"{record} => {num}" );
             return num;
         } )
         .Sum();

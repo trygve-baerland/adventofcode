@@ -117,4 +117,12 @@ public static class Extensions
             next = func( current );
         }
     }
+
+    public static IEnumerable<T> OtherWay<T>( this List<T> source )
+    {
+        for ( int i = source.Count - 1; i >= 0; i-- )
+        {
+            yield return source[i];
+        }
+    }
 }
