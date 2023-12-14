@@ -61,6 +61,7 @@ public struct Point( int x, int y ) : IEquatable<Point>
 
     public (int x, int y) ToTuple() => (X, Y);
     public static (int x, int y) operator -( Point p1, Point p2 ) => (p1.X - p2.X, p1.Y - p2.Y);
+    public static Point operator +( Point p1, (int x, int y) p2 ) => new( p1.X + p2.x, p1.Y + p2.y );
     public static bool operator ==( Point p1, Point p2 ) => p1.Equals( p2 );
     public static bool operator !=( Point p1, Point p2 ) => !p1.Equals( p2 );
     public int Cross( Point p ) => X * p.Y - Y * p.X;
