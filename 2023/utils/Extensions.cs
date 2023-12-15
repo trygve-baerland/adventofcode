@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Text.Json;
+using System.Transactions;
 namespace Utils;
 public static class Extensions
 {
@@ -124,5 +126,30 @@ public static class Extensions
         {
             yield return source[i];
         }
+    }
+
+    public static IEnumerable<IEnumerable<T>> Split<T>( this IEnumerable<T> source, T separator )
+    where T : IEquatable<T>
+    {
+        var iterator = source.GetEnumerator();
+
+        while ( iterator.MoveNext() )
+        {
+            yield return GetNextPartiotion( iterator, separator );
+        }
+    }
+
+    public static IEnumerable<T> GetNextPartiotion<T>( IEnumerator<T> enumerator, T separator )
+    where T : IEquatable<T>
+    {
+        do
+        {
+            var item = enumerator.Current;
+            if ( item.Equals( separator ) )
+            {
+                yield break;
+            }
+            yield return item;
+        } while ( enumerator.MoveNext() );
     }
 }
