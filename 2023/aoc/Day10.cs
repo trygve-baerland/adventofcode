@@ -72,7 +72,7 @@ public struct Point( int x, int y ) : IEquatable<Point>
 
     public override int GetHashCode()
     {
-        return X ^ Y;
+        return HashCode.Combine( X, Y );
     }
 }
 
