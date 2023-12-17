@@ -53,8 +53,7 @@ public class FactoryLayout( int[][] heatMap )
     where T : struct, ICrucible<T>
     {
         var queue = new PriorityQueue<T, long>();
-        //var seen = new HashSet<T>();
-        var seen = new VisitedMap( Height, Width );
+        var seen = new HashSet<T>();
         queue.Enqueue( from, 0L );
 
         while ( queue.TryDequeue( out var crucible, out var heatLoss ) )
@@ -82,56 +81,10 @@ public class FactoryLayout( int[][] heatMap )
     => crucible.GetNext().Where( c => Contains( c.Point ) );
 }
 
-public class VisitedMap( int height, int width )
-{
-    private bool[][][][] Map { get; } = Enumerable.Range( 0, height )
-        .Select( _ => Enumerable.Range( 0, width )
-            .Select( _ => Enumerable.Range( 0, 4 )
-                .Select( _ => new bool[11] )
-                .ToArray()
-            .ToArray()
-        )
-        .ToArray()
-    ).ToArray();
-
-    public bool this[Point p, (int x, int y) direction, int steps]
-    {
-        get => Map[p.X][p.Y][DirIndex( direction )][steps];
-        set {
-            Map[p.X][p.Y][DirIndex( direction )][steps] = value;
-        }
-    }
-
-    private static int DirIndex( (int x, int y) direction )
-    {
-        if ( direction == (0, 1) ) return 0;
-        if ( direction == (0, -1) ) return 1;
-        if ( direction == (1, 0) ) return 2;
-        if ( direction == (-1, 0) ) return 3;
-        throw new Exception( "Invalid direction" );
-    }
-
-    public bool Contains<T>( T crucible )
-    where T : ICrucible<T>
-    {
-        return this[crucible.Point, crucible.Direction, crucible.Steps];
-    }
-
-    public bool Add<T>( T crucible )
-    where T : ICrucible<T>
-    {
-        var result = !Contains( crucible );
-        this[crucible.Point, crucible.Direction, crucible.Steps] = true;
-        return result;
-    }
-}
-
 public interface ICrucible<T>
 where T : ICrucible<T>
 {
     public Point Point { get; }
-    public (int x, int y) Direction { get; }
-    public int Steps { get; }
     public IEnumerable<T> GetNext();
 
     public bool CanStop();
@@ -159,6 +112,8 @@ public struct StandardCrucible( Point point, (int x, int y) direction, int steps
     }
 
     public bool CanStop() => true;
+
+    public override int GetHashCode() => HashCode.Combine( Point, Direction, Steps );
 }
 
 public struct UltraCrucible( Point point, (int x, int y) direction, int steps )
@@ -187,4 +142,6 @@ public struct UltraCrucible( Point point, (int x, int y) direction, int steps )
     }
 
     public bool CanStop() => Steps >= 4;
+
+    public override int GetHashCode() => HashCode.Combine( Point, Direction, Steps );
 }
