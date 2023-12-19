@@ -5,20 +5,20 @@ namespace AoC;
 
 public sealed class Day19 : IPuzzle
 {
-    public (AllPipelines pipelines, IEnumerable<MachinePart> parts) TestInput() => Helpers.ParseInput( "inputdata/day19_test.txt" );
-    public (AllPipelines pipelines, IEnumerable<MachinePart> parts) ActualInput() => Helpers.ParseInput( "inputdata/day19.txt" );
+    public (IRule rule, IEnumerable<MachinePart> parts) TestInput() => Helpers.ParseInput( "inputdata/day19_test.txt" );
+    public (IRule rule, IEnumerable<MachinePart> parts) ActualInput() => Helpers.ParseInput( "inputdata/day19.txt" );
 
     public void Part1()
     {
-        var (pipelines, parts) = ActualInput();
-        var result = parts.Where( pipelines.Accept ).Sum( part => part.Score() );
+        var (rule, parts) = ActualInput();
+        var result = parts.Where( rule.Validate ).Sum( part => part.Score() );
         Console.WriteLine( result );
     }
 
     public void Part2()
     {
-        var (pipelines, parts) = ActualInput();
-        var result = pipelines["in"].ValidRange( pipelines ).Select( range => range.Score() ).Sum();
+        var (rule, parts) = ActualInput();
+        var result = rule.ValidRange().Select( range => range.Score() ).Sum();
         Console.WriteLine( result );
     }
 }
@@ -41,25 +41,42 @@ public record struct MachinePart( int x, int m, int a, int s )
     };
 }
 
-public record struct AllPipelines( Dictionary<string, IRule> rules )
+public record struct RuleResolver( Dictionary<string, IRule> rules )
 {
     public IRule this[string name] => rules[name];
 
-    public bool Accept( MachinePart part ) => rules["in"].ValidateNext( part, this ) is AcceptRule;
+    public IRule Resolve( IRule rule ) =>
+        rule switch {
+            AcceptRule r => r,
+            RejectRule r => r,
+            ReferenceRule r => Resolve( r ),
+            LessThanRule r => Resolve( r ),
+            GreaterThanRule r => Resolve( r ),
+            _ => throw new ArgumentException( $"Unknown rule type {rule.GetType()}" )
+        };
+    public IRule Resolve( ReferenceRule rule ) => Resolve( rule.Ref );
+
+    public IRule Resolve( LessThanRule rule ) =>
+        new LessThanRule( rule.attr, rule.value, Resolve( rule.yesRule ), Resolve( rule.noRule ) );
+
+    public IRule Resolve( GreaterThanRule rule ) =>
+        new GreaterThanRule( rule.attr, rule.value, Resolve( rule.yesRule ), Resolve( rule.noRule ) );
+
+    public IRule Resolve( string name ) => Resolve( rules[name] );
 }
 
 public interface IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context );
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context );
+    public bool Validate( MachinePart part );
+    public IEnumerable<MachinePartRange> ValidRange();
 
 }
 
 public struct AcceptRule : IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context ) => this;
+    public bool Validate( MachinePart part ) => true;
 
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context )
+    public IEnumerable<MachinePartRange> ValidRange()
     {
         yield return MachinePartRange.Full();
     }
@@ -67,48 +84,47 @@ public struct AcceptRule : IRule
 
 public struct RejectRule : IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context ) => this;
+    public bool Validate( MachinePart part ) => false;
 
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context )
+    public IEnumerable<MachinePartRange> ValidRange()
     {
         yield break;
     }
-
 
 }
 
 public record struct ReferenceRule( string Ref ) : IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context )
+    public bool Validate( MachinePart part )
     {
-        return context[Ref].ValidateNext( part, context );
+        throw new Exception( $"Cannot validate reference '{Ref}'" );
     }
 
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context )
+    public IEnumerable<MachinePartRange> ValidRange()
     {
-        return context[Ref].ValidRange( context );
+        throw new Exception( $"Cannot validate reference '{Ref}'" );
     }
 }
 
 public record struct LessThanRule( char attr, int value, IRule yesRule, IRule noRule ) : IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context )
+    public bool Validate( MachinePart part )
     {
-        return (part.Get( attr ) < value ? yesRule : noRule).ValidateNext( part, context );
+        return (part.Get( attr ) < value ? yesRule : noRule).Validate( part );
     }
 
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context )
+    public IEnumerable<MachinePartRange> ValidRange()
     {
         // Do the true path first:
         var lessThan = MachinePartRange.LessThan( attr, value );
-        foreach ( var range in yesRule.ValidRange( context ) )
+        foreach ( var range in yesRule.ValidRange() )
         {
             yield return range.Intersect( lessThan );
         }
 
         // false path:
         var greaterThan = MachinePartRange.GreaterThan( attr, value - 1 );
-        foreach ( var range in noRule.ValidRange( context ) )
+        foreach ( var range in noRule.ValidRange() )
         {
             yield return range.Intersect( greaterThan );
         }
@@ -117,21 +133,21 @@ public record struct LessThanRule( char attr, int value, IRule yesRule, IRule no
 
 public record struct GreaterThanRule( char attr, int value, IRule yesRule, IRule noRule ) : IRule
 {
-    public IRule ValidateNext( MachinePart part, AllPipelines context ) =>
-        (part.Get( attr ) > value ? yesRule : noRule).ValidateNext( part, context );
+    public bool Validate( MachinePart part ) =>
+        (part.Get( attr ) > value ? yesRule : noRule).Validate( part );
 
-    public IEnumerable<MachinePartRange> ValidRange( AllPipelines context )
+    public IEnumerable<MachinePartRange> ValidRange()
     {
         // true path:
         var greaterThan = MachinePartRange.GreaterThan( attr, value );
-        foreach ( var range in yesRule.ValidRange( context ) )
+        foreach ( var range in yesRule.ValidRange() )
         {
             yield return range.Intersect( greaterThan );
         }
 
         // false path:
         var lessThan = MachinePartRange.LessThan( attr, value + 1 );
-        foreach ( var range in noRule.ValidRange( context ) )
+        foreach ( var range in noRule.ValidRange() )
         {
             yield return range.Intersect( lessThan );
         }
@@ -238,17 +254,17 @@ public static partial class Helpers
             .Then( name => RuleParser.Select( rule => (name, rule) ) )
             .Then( item => Parse.Char( '}' ).Select( _ => item ) );
 
-    public static readonly Parser<AllPipelines> AllPipelinesParser =
+    public static readonly Parser<RuleResolver> RuleResolverParser =
         PipelineParser.DelimitedBy( Parse.Char( '\n' ).Once() )
             .Select( pipelines => pipelines.ToDictionary( p => p.name, p => p.rule ) )
-            .Select( pipelines => new AllPipelines( pipelines ) );
+            .Select( pipelines => new RuleResolver( pipelines ) );
 
-    public static readonly Parser<(AllPipelines, IEnumerable<MachinePart>)> InputParser =
-        AllPipelinesParser
-            .Then( pipelines => Parse.Char( '\n' ).Repeat( 2 ).Select( _ => pipelines ) )
-            .Then( pipelines => MachinePartParser.DelimitedBy( Parse.Char( '\n' ) ).Select( parts => (pipelines, parts) ) );
+    public static readonly Parser<(IRule, IEnumerable<MachinePart>)> InputParser =
+        RuleResolverParser.Select( resolver => resolver.Resolve( "in" ) )
+            .Then( rule => Parse.Char( '\n' ).Repeat( 2 ).Select( _ => rule ) )
+            .Then( rule => MachinePartParser.DelimitedBy( Parse.Char( '\n' ) ).Select( parts => (rule, parts) ) );
 
-    public static (AllPipelines pipelines, IEnumerable<MachinePart> parts) ParseInput( string filename )
+    public static (IRule rule, IEnumerable<MachinePart> parts) ParseInput( string filename )
         => InputParser.Parse( string.Concat( filename.Stream().GetChars() ) );
     #endregion parsers
 }
