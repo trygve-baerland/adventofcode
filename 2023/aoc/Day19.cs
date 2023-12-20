@@ -108,10 +108,8 @@ public record struct ReferenceRule( string Ref ) : IRule
 
 public record struct LessThanRule( char attr, int value, IRule yesRule, IRule noRule ) : IRule
 {
-    public bool Validate( MachinePart part )
-    {
-        return (part.Get( attr ) < value ? yesRule : noRule).Validate( part );
-    }
+    public bool Validate( MachinePart part ) =>
+        (part.Get( attr ) < value ? yesRule : noRule).Validate( part );
 
     public IEnumerable<MachinePartRange> ValidRange()
     {

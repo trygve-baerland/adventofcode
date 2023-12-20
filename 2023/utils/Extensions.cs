@@ -112,11 +112,28 @@ public static class Extensions
         yield return current;
 
         var next = func( current );
-        while ( !next.Equals( current ) )
+        while ( true )
         {
             current = next;
             yield return current;
             next = func( current );
+        }
+    }
+
+    public static IEnumerable<T> TakeWhile<T>( this IEnumerable<T> source, Func<T, bool> predicate, bool includeLast )
+    {
+        foreach ( var item in source )
+        {
+            if ( predicate( item ) )
+            {
+                yield return item;
+            }
+            else
+            {
+                if ( includeLast )
+                    yield return item;
+                yield break;
+            }
         }
     }
 
