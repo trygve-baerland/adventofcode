@@ -54,10 +54,26 @@ public struct Point( int x, int y ) : IEquatable<Point>
         return $"({X}, {Y})";
     }
 
+    public static IEnumerable<(int x, int y)> Directions()
+    {
+        yield return (0, 1);
+        yield return (1, 0);
+        yield return (0, -1);
+        yield return (-1, 0);
+    }
+
     public Point Down() => new Point( X + 1, Y );
     public Point Up() => new Point( X - 1, Y );
     public Point Left() => new Point( X, Y - 1 );
     public Point Right() => new Point( X, Y + 1 );
+
+    public IEnumerable<Point> Neighbours()
+    {
+        foreach ( var d in Directions() )
+        {
+            yield return this + d;
+        }
+    }
 
     public (int x, int y) ToTuple() => (X, Y);
     public static (int x, int y) operator -( Point p1, Point p2 ) => (p1.X - p2.X, p1.Y - p2.Y);
