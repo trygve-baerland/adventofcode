@@ -46,6 +46,9 @@ public struct Interval( long start, long end )
         return $"[{Start}, {End}]";
     }
 
+    public bool Intersects( Interval other ) =>
+        Start <= other.End && other.Start <= End;
+
     public long Length() => End - Start + 1;
 }
 
