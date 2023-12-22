@@ -16,9 +16,7 @@ public sealed class Day22 : IPuzzle
 
     public void Part1()
     {
-        var cubes = ActualCubes();
-        var stack = new SandStack();
-        stack.LetFall( cubes );
+        var stack = ActualCubes().LetFall();
 
         var result = stack.Cubes
             .Where( c => c.CanBeDisintegrated() )
@@ -30,15 +28,24 @@ public sealed class Day22 : IPuzzle
 
     public void Part2()
     {
-        var cubes = ActualCubes();
-        var stack = new SandStack();
-        stack.LetFall( cubes );
+        var stack = ActualCubes().LetFall();
         var result = stack.Cubes
             .Select( f => f.Disintegrate() )
             .Sum();
 
         Console.WriteLine( $"Result: {result}" );
     }
+}
+
+public static class CubeExtensions
+{
+    public static SandStack LetFall( this IEnumerable<Cube> cubes ) =>
+        cubes
+        .OrderBy( c => c.Z.Start )
+        .Aggregate( new SandStack(), ( stack, cube ) => {
+            stack.LetFall( cube );
+            return stack;
+        } );
 }
 
 public record struct Rectangle( Interval X, Interval Y )
@@ -77,20 +84,14 @@ public record class FallingSandCube
     private List<FallingSandCube> Supports { get; } = new();
     // All cubes that support this.
     private List<FallingSandCube> SupportedBy { get; } = new();
-
     public Cube Cube { get; init; }
-
     public long AtHeight { get; init; }
     public long Id { get; init; }
 
-    public bool CanBeDisintegrated()
-    {
-        // If it doesn't support anything, we're in the clear
-        if ( Supports.Count == 0 ) return true;
-        // Otherwise, we need to check that every cube supported by it,
+    public bool CanBeDisintegrated() =>
+        // We need to check that every cube supported by it,
         // is supported by something else
-        return Supports.All( s => s.SupportedBy.Count > 1 );
-    }
+        Supports.All( s => s.SupportedBy.Count > 1 );
 
     public long MaxHeight() => AtHeight + Cube.Z.Length();
 
@@ -100,27 +101,17 @@ public record class FallingSandCube
         other.Supports.Add( this );
     }
 
-    /// <summary>
-    /// If we disintegrate this cube, how many cubes will fall?
-    /// </summary>
-    /// <returns></returns>
     public long Disintegrate( List<long>? fallen = null )
     {
         fallen ??= new List<long>();
         // We let this cube "fall":
         fallen.Add( Id );
-        var result = 0L;
-        // For each of the cube that we support, we check if it now starts falling
-        foreach ( var supported in Supports )
-        {
-            if ( supported.SupportedBy
-                .Select( f => f.Id )
-                .All( id => fallen.Contains( id ) ) )
-            {
-                result += 1 + supported.Disintegrate( fallen );
-            }
-        }
-        return result;
+        return Supports
+            .Where( f => f.SupportedBy
+                .All( s => fallen.Contains( s.Id ) )
+            )
+            .Select( f => 1 + f.Disintegrate( fallen ) )
+            .Sum();
     }
 }
 
@@ -144,23 +135,9 @@ public class SandStack
         };
 
         // Now we add all support connections that are needed:
-        foreach ( var landed in Cubes )
-        {
-            if ( landed.MaxHeight() == falling.AtHeight && landed.Cube.VerticallyOverlaps( falling.Cube ) )
-            {
-                falling.RestsOn( landed );
-            }
-        }
+        Cubes.Where( c => c.MaxHeight() == falling.AtHeight && c.Cube.VerticallyOverlaps( falling.Cube ) )
+            .ForEach( falling.RestsOn );
         // Finally, we add the cube to the stack:
         Cubes.Add( falling );
     }
-
-    public void LetFall( IEnumerable<Cube> cubes )
-    {
-        foreach ( var cube in cubes.OrderBy( c => c.Z.Start ) )
-        {
-            LetFall( cube );
-        }
-    }
 }
-

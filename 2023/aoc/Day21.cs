@@ -139,4 +139,3 @@ public record struct GardenMap( char[][] Map )
         yield return new Point( Height - 1, Width - 1 );
     }
 }
-
