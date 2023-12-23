@@ -174,31 +174,22 @@ public class CondensedGraph
         .Select( kvp => (kvp.Key.Item2, kvp.Value) );
 
 
-    public IEnumerable<(Point point, int distance)> UndirectedNeighbours( Point p )
-    {
-        foreach ( var (p1, p2) in Edges.Keys )
-        {
-            if ( p1 == p )
-            {
-                yield return (p2, Edges[(p1, p2)]);
-            }
-            else if ( p2 == p )
-            {
-                yield return (p1, Edges[(p1, p2)]);
-            }
-        }
-    }
+    public IEnumerable<(Point point, int distance)> UndirectedNeighbours( Point p ) =>
+        Edges.Where( kvp => kvp.Key.Item1 == p || kvp.Key.Item2 == p )
+        .Select( kvp => (kvp.Key.Item1 == p ? kvp.Key.Item2 : kvp.Key.Item1, kvp.Value) );
 
     public IEnumerable<long> AllPaths( Point start, Point end, bool directed = true )
     {
-        Func<Point, IEnumerable<(Point, int)>> neighbours = directed
+        Func<Point, IEnumerable<(Point point, int distance)>> neighbours = directed
             ? DirectedNeighbours
             : UndirectedNeighbours;
 
-        var queue = new PriorityQueue<IEnumerable<Point>, long>();
-        queue.Enqueue( new[] { start }, 0L );
-        while ( queue.TryDequeue( out var path, out var distance ) )
+        // Let's do it as a DFS search:
+        var stack = new Stack<(IEnumerable<Point> path, long distance)>();
+        stack.Push( (new[] { start }, 0L) );
+        while ( stack.TryPop( out var item ) )
         {
+            var (path, distance) = item;
             var last = path.Last();
             if ( last == end )
             {
@@ -206,11 +197,20 @@ public class CondensedGraph
             }
             else
             {
-                foreach ( var (next, length) in neighbours( last ) )
+                var nexts = neighbours( last );
+                // If it contains the end point, that's the only way to go:
+                if ( nexts.Any( t => t.point == end ) )
                 {
-                    if ( !path.Contains( next ) )
+                    stack.Push( (path.Append( end ), distance + nexts.First( t => t.point == end ).distance) );
+                }
+                else
+                {
+                    foreach ( var (next, length) in nexts )
                     {
-                        queue.Enqueue( path.Append( next ), distance + length );
+                        if ( !path.Contains( next ) )
+                        {
+                            stack.Push( (path.Append( next ), distance + length) );
+                        }
                     }
                 }
             }
