@@ -1,4 +1,3 @@
-using System.ComponentModel.Design;
 using System.Text;
 using Utils;
 namespace AoC;
@@ -12,7 +11,7 @@ public sealed class Day23 : IPuzzle
     {
         var map = ActualMap();
         var graph = map.Condense();
-        var result = graph.AllPaths( directed: true ).Max();
+        var result = graph.LongestPath( true );
         Console.WriteLine( result );
     }
 
@@ -20,7 +19,7 @@ public sealed class Day23 : IPuzzle
     {
         var map = ActualMap();
         var graph = map.Condense();
-        var result = graph.AllPaths( directed: false ).Max();
+        var result = graph.LongestPath( false );
         Console.WriteLine( result );
     }
 }
@@ -182,44 +181,49 @@ public class CondensedGraph
         .Select( kvp => (kvp.Key.Item1 == pid ? kvp.Key.Item2 : kvp.Key.Item1, kvp.Value) );
 
 
-    public IEnumerable<long> AllPaths( bool directed = true )
+    public long LongestPath( bool directed = true )
     {
-        Func<long, IEnumerable<(long pid, int distance)>> neighbours = directed
-            ? DirectedNeighbours
-            : UndirectedNeighbours;
-
-        // Let's do it as a DFS search:
+        var start = Start;
         var end = End;
+        var cache = new Dictionary<(long pid, long visited), long>();
+        Func<long, IEnumerable<(long pid, int distance)>> neighbours = directed ? DirectedNeighbours : UndirectedNeighbours;
+        return _LongestPath( cache, start, 0L, end, neighbours );
+    }
 
-        var stack = new Stack<(long pid, long visited, long distance)>();
-        stack.Push( (Start, 0L, 0L) );
-
-        while ( stack.TryPop( out var item ) )
+    public long _LongestPath(
+        Dictionary<(long pid, long visited), long> cache,
+        long fromId,
+        long visited,
+        long goalId,
+        Func<long, IEnumerable<(long pid, int distance)>> neighbours
+    )
+    {
+        if ( fromId == goalId )
         {
-            var (pid, visited, distance) = item;
-            if ( pid == end )
-            {
-                yield return distance;
-            }
-            else
-            {
-                var nexts = neighbours( pid );
-                // If it contains the end point, that's the only way to go:
-                if ( nexts.Any( t => t.pid == end ) )
-                {
-                    stack.Push( (end, visited | end, distance + nexts.First( t => t.pid == end ).distance) );
-                }
-                else
-                {
-                    foreach ( var (next, length) in nexts )
-                    {
-                        if ( (visited & next) == 0 )
-                        {
-                            stack.Push( (next, visited | next, distance + length) );
-                        }
-                    }
-                }
-            }
+            return 0L;
         }
+        else if ( (visited & fromId) != 0 ) // Already visited
+        {
+            return long.MinValue;
+        }
+        var key = (fromId, visited);
+        if ( !cache.ContainsKey( key ) )
+        {
+            //cache[key] = 
+            long max = long.MinValue;
+            var nexts = neighbours( fromId ).ToList();
+            // If we are at the end, we can only go to the end:
+            if ( nexts.Any( t => t.pid == goalId ) )
+            {
+                nexts = nexts.Where( t => t.pid == goalId ).ToList();
+            }
+            foreach ( var item in nexts )
+            {
+                var (nextId, distance) = item;
+                max = System.Math.Max( max, distance + _LongestPath( cache, nextId, visited | fromId, goalId, neighbours ) );
+            }
+            cache[key] = max;
+        }
+        return cache[key];
     }
 }
