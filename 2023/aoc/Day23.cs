@@ -1,3 +1,4 @@
+using System.ComponentModel.Design;
 using System.Text;
 using Utils;
 namespace AoC;
@@ -11,9 +12,7 @@ public sealed class Day23 : IPuzzle
     {
         var map = ActualMap();
         var graph = map.Condense();
-        var start = new Point( 0, 1 );
-        var end = new Point( map.Height - 1, map.Width - 2 );
-        var result = graph.AllPaths( start, end, directed: true ).Max();
+        var result = graph.AllPaths( directed: true ).Max();
         Console.WriteLine( result );
     }
 
@@ -21,9 +20,7 @@ public sealed class Day23 : IPuzzle
     {
         var map = ActualMap();
         var graph = map.Condense();
-        var start = new Point( 0, 1 );
-        var end = new Point( map.Height - 1, map.Width - 2 );
-        var result = graph.AllPaths( start, end, directed: false ).Max();
+        var result = graph.AllPaths( directed: false ).Max();
         Console.WriteLine( result );
     }
 }
@@ -72,7 +69,9 @@ public record class PathMap( char[][] Map )
                 if ( next != node && result.Contains( next ) )
                 {
                     // We found a new going from node to next:
-                    result[node, next] = length + 1;
+                    var nextid = result[next];
+                    var nodeid = result[node];
+                    result[nodeid, nextid] = length + 1;
                     queue.Enqueue( (next, next, 0) );
                 }
                 else if ( !seen.Contains( next ) )
@@ -147,18 +146,22 @@ public record class PathMap( char[][] Map )
 
 public class CondensedGraph
 {
-    public HashSet<Point> Points { get; } = new();
-    public Dictionary<(Point, Point), int> Edges { get; } = new();
+    public Dictionary<Point, long> Points { get; } = new();
+    public Dictionary<(long start, long end), int> Edges { get; } = new();
 
-    public int this[Point p1, Point p2]
+    public int this[long p1, long p2]
     {
         get => Edges[(p1, p2)];
         set => Edges[(p1, p2)] = value;
     }
 
-    public bool Contains( Point p ) => Points.Contains( p );
+    public long this[Point p] => Points[p];
 
-    public void Add( Point p ) => Points.Add( p );
+    public long Start => Points.Select( kvp => kvp.Value ).Min();
+    public long End => Points.Select( kvp => kvp.Value ).Max();
+
+    public bool Contains( Point p ) => Points.ContainsKey( p );
+    public void Add( Point p ) => Points.Add( p, 1L << Points.Count );
 
     public override string ToString()
     {
@@ -168,48 +171,51 @@ public class CondensedGraph
         return sb.ToString();
     }
 
-    public IEnumerable<(Point point, int distance)> DirectedNeighbours( Point p ) =>
+    public IEnumerable<(long pid, int distance)> DirectedNeighbours( long pid ) =>
         Edges
-        .Where( kvp => kvp.Key.Item1 == p )
+        .Where( kvp => kvp.Key.Item1 == pid )
         .Select( kvp => (kvp.Key.Item2, kvp.Value) );
 
 
-    public IEnumerable<(Point point, int distance)> UndirectedNeighbours( Point p ) =>
-        Edges.Where( kvp => kvp.Key.Item1 == p || kvp.Key.Item2 == p )
-        .Select( kvp => (kvp.Key.Item1 == p ? kvp.Key.Item2 : kvp.Key.Item1, kvp.Value) );
+    public IEnumerable<(long pid, int distance)> UndirectedNeighbours( long pid ) =>
+        Edges.Where( kvp => kvp.Key.Item1 == pid || kvp.Key.Item2 == pid )
+        .Select( kvp => (kvp.Key.Item1 == pid ? kvp.Key.Item2 : kvp.Key.Item1, kvp.Value) );
 
-    public IEnumerable<long> AllPaths( Point start, Point end, bool directed = true )
+
+    public IEnumerable<long> AllPaths( bool directed = true )
     {
-        Func<Point, IEnumerable<(Point point, int distance)>> neighbours = directed
+        Func<long, IEnumerable<(long pid, int distance)>> neighbours = directed
             ? DirectedNeighbours
             : UndirectedNeighbours;
 
         // Let's do it as a DFS search:
-        var stack = new Stack<(IEnumerable<Point> path, long distance)>();
-        stack.Push( (new[] { start }, 0L) );
+        var end = End;
+
+        var stack = new Stack<(long pid, long visited, long distance)>();
+        stack.Push( (Start, 0L, 0L) );
+
         while ( stack.TryPop( out var item ) )
         {
-            var (path, distance) = item;
-            var last = path.Last();
-            if ( last == end )
+            var (pid, visited, distance) = item;
+            if ( pid == end )
             {
                 yield return distance;
             }
             else
             {
-                var nexts = neighbours( last );
+                var nexts = neighbours( pid );
                 // If it contains the end point, that's the only way to go:
-                if ( nexts.Any( t => t.point == end ) )
+                if ( nexts.Any( t => t.pid == end ) )
                 {
-                    stack.Push( (path.Append( end ), distance + nexts.First( t => t.point == end ).distance) );
+                    stack.Push( (end, visited | end, distance + nexts.First( t => t.pid == end ).distance) );
                 }
                 else
                 {
                     foreach ( var (next, length) in nexts )
                     {
-                        if ( !path.Contains( next ) )
+                        if ( (visited & next) == 0 )
                         {
-                            stack.Push( (path.Append( next ), distance + length) );
+                            stack.Push( (next, visited | next, distance + length) );
                         }
                     }
                 }
