@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Transactions;
 namespace AoC.Utils;
@@ -20,13 +21,21 @@ public static class Extensions
 
     public static IEnumerable<IEnumerable<T>> Clump<T>( this IEnumerable<T> lines, int n )
     {
-        int N = lines.Count();
-        int counter = 0;
-        while ( counter < N )
+        using ( var enumerator = lines.GetEnumerator() )
         {
-            yield return lines.Skip( counter ).Take( n );
-            counter += n;
+            while ( enumerator.MoveNext() )
+            {
+                yield return enumerator.Take( n ).ToList();
+            }
         }
+    }
+
+    public static IEnumerable<T> Take<T>( this IEnumerator<T> enumerator, int n )
+    {
+        do
+        {
+            yield return enumerator.Current;
+        } while ( --n > 0 && enumerator.MoveNext() );
     }
 
     public static StreamReader Stream( this string filename )
