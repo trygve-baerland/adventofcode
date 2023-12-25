@@ -1,39 +1,6 @@
 namespace Day3;
 
-public class Helpers
-{
-    public static (char[] lhs, char[] rhs) SplitLine(string line)
-    {
-        var len = line.Length;
-        return (
-            line.ToCharArray(0, len / 2),
-            line.ToCharArray(len / 2, len / 2)
-        );
-    }
-    public static int Score(char letter)
-    {
-        if (char.IsUpper(letter))
-        {
-            return letter - 'A' + 27;
-        }
-        else
-        {
-            return letter - 'a' + 1;
-        }
-    }
 
-    public static char GetCommonLetter(IEnumerable<string> lines)
-    {
-        Console.WriteLine("GetCommonLetter");
-        foreach (var line in lines)
-        {
-            Console.WriteLine(line);
-        }
-        return lines.Select(line => line.ToCharArray())
-            .Aggregate((acc, item) => acc.Intersect(item).ToArray())
-            .First();
-    }
-}
 static class Extensions
 {
     public static IEnumerable<string> GetLines(this StreamReader reader)
