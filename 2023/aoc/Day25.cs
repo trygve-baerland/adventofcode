@@ -13,9 +13,9 @@ public sealed class Day25 : IPuzzle
         var graph = ActualGraph();
         graph.PrintStats();
         var (cut, nodes) = graph.GlobalMinCut();
-        Console.WriteLine( $"Cut: {cut}, nodes: {nodes}" );
+        Console.WriteLine( $"Cut: {cut}, nodes: {nodes}, count: {nodes.Count()}" );
 
-        var result = (nodes.Count()) * (graph.Modules.Count - nodes.Count());
+        var result = nodes.Count() * (graph.Modules.Count - nodes.Count());
 
         Console.WriteLine( result );
     }
@@ -84,7 +84,8 @@ public record class ModuleGraph()
         var counter = 0;
         while ( sets.Count > 1 )
         {
-            var (cut, newSets, newWeights) = MinimumCutPhase( sets, weights );
+            //Console.WriteLine( $"sets: {string.Join( ',', sets )}" );
+            var (cut, newSets, newWeights) = MinimumCutPhase( sets, weights, numPhases: counter++ );
             weights = newWeights;
             if ( cut < best.cut )
             {
@@ -95,16 +96,12 @@ public record class ModuleGraph()
         return best;
     }
 
-    public (long, VertexSet, long[][]) MinimumCutPhase( List<VertexSet> allNodes, long[][] weights )
+    public (long, VertexSet, long[][]) MinimumCutPhase( List<VertexSet> allNodes, long[][] weights, int numPhases )
     {
-        // We assume all vertex sets in allNodes are disjoint. And we must keep it that way.
-        // We assume length of allNodes is at least 2.
-        // Start with an empty set:
-        var A = new VertexSet();
-        // Add the first element:
         var N = allNodes.Count;
+        // Start with an empty set:
+        // Add the first element:
         var w = new long[N];
-        // We've taken the zero'th element:
         Array.Copy( weights[0], w, N );
         // w no contains the the weights of the edges from A to every node in allNodes.
 
@@ -114,7 +111,7 @@ public record class ModuleGraph()
         var ti = 0;
         long cut = 0L;
         // Main loop:
-        while ( counter < allNodes.Count )
+        while ( counter < allNodes.Count - numPhases )
         {
             w[ti] = long.MinValue;
             si = ti;
@@ -131,9 +128,15 @@ public record class ModuleGraph()
         // We can now merge s and t, and put it into our allNodes:
         var t = allNodes[ti];
         allNodes[si].Union( allNodes[ti] );
-        allNodes.RemoveAt( ti );
         // Don't forget to update the weights as well.
-        return (cut, t, weights.Merge( si, ti ));
+        for ( int i = 0; i < N; i++ )
+        {
+            weights[si][i] += weights[ti][i];
+            weights[i][si] += weights[i][ti];
+        }
+        weights[0][ti] = long.MinValue;
+        weights[ti][0] = long.MinValue;
+        return (cut, t, weights);
     }
 
     public (List<VertexSet> nodes, long[][] weights) AdjacencyGraph()
@@ -198,36 +201,4 @@ public static partial class Helpers
             .Then( name => Parse.String( ": " ).Select( _ => name ) )
             .Then( name => ModuleName.DelimitedBy( Parse.String( " " ) ).Select( connections => (name, connections) ) );
     #endregion parsers
-
-    public static long[][] Merge( this long[][] weights, int s, int t )
-    {
-        var N = weights.Length;
-        // Initialize the new array:
-        var newWeights = Enumerable.Range( 0, N )
-            .Select( _ => Enumerable.Repeat( 0L, N ).ToArray() )
-            .ToArray();
-        // Start with a basic copy:
-        for ( int i = 0; i < N; i++ )
-        {
-            for ( int j = 0; j < N; j++ )
-            {
-                newWeights[i][j] = weights[i][j];
-            }
-        }
-        // Now merge s and t:
-        for ( int i = 0; i < N; i++ )
-        {
-            newWeights[s][i] += newWeights[t][i];
-            newWeights[i][s] += newWeights[i][t];
-        }
-        // Remove column t and row t:
-        return newWeights.Select( ( row, i ) => (row, i) )
-            .Where( item => item.i != t )
-            .Select( item => item.row.Select( ( col, j ) => (col, j) )
-                .Where( item => item.j != t )
-                .Select( item => item.col )
-                .ToArray()
-            )
-            .ToArray();
-    }
 }
