@@ -20,6 +20,7 @@ Parser.Default.ParseArguments<CommandLineOptions>( args )
         var dayType = solutionsOfYear[$"Day{o.Day}"] ?? throw new ArgumentException( $"År {o.Year}, dag {o.Day} er ikke gyldig" );
         var solution = ( IPuzzle ) Activator.CreateInstance( dayType )!;
         var sw = new Stopwatch();
+        Console.WriteLine( "Part 1:" );
         sw.Start();
         solution.Part1();
         sw.Stop();

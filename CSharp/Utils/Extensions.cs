@@ -1,8 +1,3 @@
-using System;
-using System.IO;
-using System.Runtime.CompilerServices;
-using System.Text.Json;
-using System.Transactions;
 namespace AoC.Utils;
 public static class Extensions
 {
@@ -17,6 +12,11 @@ public static class Extensions
         {
             yield return line;
         }
+    }
+
+    public static string GetText( this string filename )
+    {
+        return File.ReadAllText( filename );
     }
 
     public static IEnumerable<IEnumerable<T>> Clump<T>( this IEnumerable<T> lines, int n )
