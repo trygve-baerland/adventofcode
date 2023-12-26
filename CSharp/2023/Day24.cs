@@ -10,7 +10,7 @@ public sealed class Day24 : IPuzzle
     public void Part1()
     {
         var stones = ActualHail();
-        var region = new DoubleInterval( 200000000000000, 400000000000000 );
+        var region = new Interval<long>( 200000000000000L, 400000000000000L );
         var result = stones.Pairs()
             .Count( pair => pair.Item1.IntersectsWith( pair.Item2, region ) );
 
@@ -37,102 +37,45 @@ public sealed class Day24 : IPuzzle
     }
 }
 
-public record struct Point3D( long X, long Y, long Z )
+internal static class Day24Helpers
 {
-    public static Point3D operator +( Point3D a, TangentVector3D b ) => new( a.X + b.X, a.Y + b.Y, a.Z + b.Z );
-    public static TangentVector3D operator -( Point3D a, Point3D b ) => new( a.X - b.X, a.Y - b.Y, a.Z - b.Z );
-    public override string ToString() => $"({X},{Y},{Z})";
-
-    public static Point3D FromString( string s )
+    public static (double a, double b) Invert(
+        Tangent2D<double> a,
+        Tangent2D<double> b,
+        Tangent2D<double> c
+    )
     {
-        var parts = s.Split( ',' );
-        return new Point3D( long.Parse( parts[0].TrimEnd() ), long.Parse( parts[1].TrimEnd() ), long.Parse( parts[2].TrimEnd() ) );
-    }
-
-    public TangentVector3D ToVector() => new( X, Y, Z );
-}
-
-public record struct TangentVector3D( long X, long Y, long Z )
-{
-    public static TangentVector3D operator +( TangentVector3D a, TangentVector3D b ) => new( a.X + b.X, a.Y + b.Y, a.Z + b.Z );
-    public static TangentVector3D operator -( TangentVector3D a, TangentVector3D b ) => new( a.X - b.X, a.Y - b.Y, a.Z - b.Z );
-    public static TangentVector3D operator -( TangentVector3D a ) => new( -a.X, -a.Y, -a.Z );
-    public static TangentVector3D operator *( TangentVector3D a, long b ) => new( a.X * b, a.Y * b, a.Z * b );
-    public static TangentVector3D operator *( double b, TangentVector3D a ) => b * a;
-
-    public TangentVector3D CrossProduct( TangentVector3D other ) =>
-        new(
-            Y * other.Z - Z * other.Y,
-            Z * other.X - X * other.Z,
-            X * other.Y - Y * other.X
-        );
-    public override string ToString() => $"[{X},{Y},{Z}]";
-
-    public static TangentVector3D FromString( string s )
-    {
-        var parts = s.Split( ',' );
-        return new TangentVector3D( long.Parse( parts[0].TrimEnd() ), long.Parse( parts[1].TrimEnd() ), long.Parse( parts[2].TrimEnd() ) );
-    }
-
-    public TangentVector2D To2D() => new( X, Y );
-
-    public Matrix<double> CrossMatrix()
-    {
-        var builder = Matrix<double>.Build;
-        return builder.DenseOfArray( new double[,] {
-            {0, -Z, Y},
-            {Z, 0, -X},
-            {-Y, X, 0}
-        } );
-    }
-
-    public MathNet.Numerics.LinearAlgebra.Vector<double> Concatenate( TangentVector3D other ) =>
-        MathNet.Numerics.LinearAlgebra.Vector<double>.Build.Dense( new double[] { X, Y, Z, other.X, other.Y, other.Z } );
-}
-
-public record struct TangentVector2D( double X, double Y )
-{
-    public override string ToString() => $"[{X},{Y}]";
-
-    public double CrossProduct( TangentVector2D other ) => X * other.Y - Y * other.X;
-
-    public static (double a, double b) Invert( TangentVector2D a, TangentVector2D b, TangentVector2D c )
-    {
-        var cross = a.CrossProduct( b );
+        var cross = a.Cross( b );
         if ( System.Math.Abs( cross ) < 1e-4 )
         {
             throw new ArgumentException( "Vectors are parallel" );
         }
-        var ra = (( double ) c.CrossProduct( b )) / cross;
-        var rb = (( double ) a.CrossProduct( c )) / cross;
+        var ra = (( double ) c.Cross( b )) / cross;
+        var rb = (( double ) a.Cross( c )) / cross;
         return (ra, rb);
     }
 }
 
-public record struct DoubleInterval( double A, double B )
-{
-    public bool Contains( double x ) => x >= A && x <= B;
-}
 
-public record struct HailStone( Point3D Position, TangentVector3D Velocity )
+public record struct HailStone( Node3D<long> Position, Tangent3D<long> Velocity )
 {
     public override string ToString() => $"pos={Position}, vel={Velocity}";
     public static HailStone FromString( string s )
     {
         var parts = s.Split( '@' );
-        var pos = Point3D.FromString( parts[0].TrimEnd() );
-        var vel = TangentVector3D.FromString( parts[1].TrimStart() );
+        var pos = Node3D<long>.FromString( parts[0].TrimEnd() );
+        var vel = Tangent3D<long>.FromString( parts[1].TrimStart() );
         return new HailStone( pos, vel );
     }
 
-    public bool IntersectsWith( HailStone other, DoubleInterval region )
+    public bool IntersectsWith( HailStone other, Interval<long> region )
     {
         try
         {
-            var (ra, rb) = TangentVector2D.Invert(
-                Velocity.To2D(),
-                (-other.Velocity).To2D(),
-                (other.Position - Position).To2D()
+            var (ra, rb) = Day24Helpers.Invert(
+                Velocity.To2D().To<double>(),
+                (-other.Velocity).To2D().To<double>(),
+                (other.Position - Position).To2D().To<double>()
             );
             // Get the position:
             var collision = Position + Velocity * (( long ) ra);
@@ -145,5 +88,5 @@ public record struct HailStone( Point3D Position, TangentVector3D Velocity )
             return false;
         }
     }
-    public TangentVector3D Cross() => Position.ToVector().CrossProduct( Velocity );
+    public Tangent3D<long> Cross() => Position.ToTangent().Cross( Velocity );
 }
