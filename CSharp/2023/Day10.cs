@@ -23,8 +23,14 @@ public sealed class Day10 : IPuzzle
         var map = ActualMap;
         var start = map.GetStart();
         var (area, circumference) = (start, start, 0L)
-            .FixPoint( item => (map.Next( item.Item1, item.Item2 ), item.Item1, item.Item3 + 1) )
-            .TakeWhile( item => !item.Item2.Equals( start ) || item.Item1.Equals( item.Item2 ) || item.Item3 < 3 )
+            .FixPoint( item =>
+                (map.Next( item.Item1, item.Item2 ), item.Item1, item.Item3 + 1)
+            )
+            .TakeWhile(
+                item => !item.Item2.Equals( start ) ||
+                item.Item1.Equals( item.Item2 ) ||
+                item.Item3 < 3
+            )
             .Skip( 1 )
             .Aggregate(
                 seed: (0L, 0L),
@@ -88,14 +94,8 @@ public struct Point( int x, int y ) : IEquatable<Point>
     }
 }
 
-public class PipeMap( char[][] map )
+public record class PipeMap( char[][] chars ) : CharMap( chars )
 {
-    public char[][] Map { get; } = map;
-    private int NC { get; } = map[0].Length;
-    private int NR { get; } = map.Length;
-
-    public char this[Point p] => Map[p.X][p.Y];
-
     private char? sVal = null;
     public char SVal
     {
@@ -109,14 +109,7 @@ public class PipeMap( char[][] map )
         }
     }
 
-    public IEnumerable<Point> Points() =>
-        Enumerable.Range( 0, NR )
-        .SelectMany(
-            i => Enumerable.Range( 0, NC )
-                .Select( j => new Point( i, j ) )
-        );
-
-    public char MapS( Point p )
+    public char MapS( Node2D<int> p )
     {
         // Assuming the given point is S, find out what letter it has replaced.
         var neighbours = Directions( p ).Where( d => this[d] != '.' && ConnectedPipes( d, this[d] ).Contains( p ) ).ToArray();
@@ -134,7 +127,7 @@ public class PipeMap( char[][] map )
         };
     }
 
-    public Point GetStart()
+    public Node2D<int> GetStart()
     {
         return Map.Select(
             ( row, i ) => (i, row.Select(
@@ -143,49 +136,41 @@ public class PipeMap( char[][] map )
             .Where( t => t.col == 'S' )
         ) )
         .Where( item => item.Item2.Any() )
-        .Select( item => new Point( item.Item1, item.Item2.First().j ) )
+        .Select( item => new Node2D<int>( item.Item1, item.Item2.First().j ) )
         .First();
     }
 
-    public IEnumerable<Point> Directions( Point p )
-    {
-        if ( p.X > 0 )
-            yield return p.Up();
-        if ( p.Y < NC - 1 )
-            yield return p.Right();
-        if ( p.X < NR - 1 )
-            yield return p.Down();
-        if ( p.Y > 0 )
-            yield return p.Left();
-    }
+    public IEnumerable<Node2D<int>> Directions( Node2D<int> p ) =>
+        p.Neighbours().Where( Contains );
 
-    public IEnumerable<Point> ConnectedPipes( Point p, char val )
+
+    public IEnumerable<Node2D<int>> ConnectedPipes( Node2D<int> p, char val )
     {
         switch ( val )
         {
             case 'F':
-                if ( p.X < NR - 1 ) yield return p.Down();
-                if ( p.Y < NC - 1 ) yield return p.Right();
+                if ( p.X < Height - 1 ) yield return p.Down();
+                if ( p.Y < Width - 1 ) yield return p.Right();
                 break;
             case 'L':
                 if ( p.X > 0 ) yield return p.Up();
-                if ( p.Y < NC - 1 ) yield return p.Right();
+                if ( p.Y < Width - 1 ) yield return p.Right();
                 break;
             case 'J':
                 if ( p.X > 0 ) yield return p.Up();
                 if ( p.Y > 0 ) yield return p.Left();
                 break;
             case '7':
-                if ( p.X < NR - 1 ) yield return p.Down();
+                if ( p.X < Height - 1 ) yield return p.Down();
                 if ( p.Y > 0 ) yield return p.Left();
                 break;
             case '|':
                 if ( p.X > 0 ) yield return p.Up();
-                if ( p.X < NR - 1 ) yield return p.Down();
+                if ( p.X < Width - 1 ) yield return p.Down();
                 break;
             case '-':
                 if ( p.Y > 0 ) yield return p.Left();
-                if ( p.Y < NC - 1 ) yield return p.Right();
+                if ( p.Y < Width - 1 ) yield return p.Right();
                 break;
             case 'S':
                 foreach ( var pipe in ConnectedPipes( p, SVal ) )
@@ -198,14 +183,14 @@ public class PipeMap( char[][] map )
         }
     }
 
-    public Point Next( Point current, Point prev ) =>
+    public Node2D<int> Next( Node2D<int> current, Node2D<int> prev ) =>
         ConnectedPipes( current, this[current] ).Where( d => d != prev ).First();
 
 }
 
 public static partial class Helpers
 {
-    public static int WindingNumber( List<Point> loop, Point x )
+    public static int WindingNumber( List<Node2D<int>> loop, Node2D<int> x )
     {
         // We need to iterate over all edges in the loop.
         return ( int ) System.Math.Round( loop.Zip( loop.Repeat().Skip( 1 ) )
@@ -213,23 +198,12 @@ public static partial class Helpers
             .Sum() / (2 * System.Math.PI) );
     }
 
-    public static (double x, double y) Normal( (int x, int y) p )
+    public static double Angle( Tangent2D<int> p1, Tangent2D<int> p2 )
     {
-        var (x, y) = p;
-        var l = System.Math.Sqrt( x * x + y * y );
-        return (x / l, y / l);
-    }
+        var n1 = p1.Normalize();
+        var n2 = p2.Normalize();
 
-    public static double Dot( (double x, double y) p1, (double x, double y) p2 ) => p1.x * p2.x + p1.y * p2.y;
-
-    public static double Cross( (double x, double y) p1, (double x, double y) p2 ) => p1.x * p2.y - p1.y * p2.x;
-
-    public static double Angle( (int x, int y) p1, (int x, int y) p2 )
-    {
-        var n1 = Normal( p1 );
-        var n2 = Normal( p2 );
-
-        var theta = System.Math.Sign( Cross( n1, n2 ) ) * System.Math.Acos( Dot( n1, n2 ) );
+        var theta = System.Math.Sign( n1.Cross( n2 ) ) * System.Math.Acos( n1.Dot( n2 ) );
         // Now, we need to figure out if the angle is positive or negative.
         return theta;
     }
