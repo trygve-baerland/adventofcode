@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace AoC.Utils;
 public static class Extensions
 {
@@ -178,4 +180,12 @@ public static class Extensions
             yield return item;
         } while ( enumerator.MoveNext() );
     }
+
+    public static T Sign<T>( this T value )
+    where T : INumber<T> =>
+        (value - T.Zero) switch {
+            > 0 => T.One,
+            < 0 => -T.One,
+            _ => T.Zero
+        };
 }

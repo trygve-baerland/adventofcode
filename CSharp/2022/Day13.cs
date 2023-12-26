@@ -1,5 +1,4 @@
-﻿using System.Security;
-using AoC.Utils;
+﻿using AoC.Utils;
 using Sprache;
 
 namespace AoC.Y2022;

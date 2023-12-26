@@ -4,7 +4,7 @@ using System.Numerics;
 
 namespace AoC.Utils;
 
-public record struct Node2D<T>( T X, T Y )
+public readonly record struct Node2D<T>( T X, T Y )
 where T : INumber<T>
 {
     public static Node2D<T> operator +( Node2D<T> lhs, Tangent2D<T> rhs ) =>
@@ -30,9 +30,21 @@ where T : INumber<T>
     public Node2D<T> Down() => this + Tangent2D<T>.Down;
     public Node2D<T> Left() => this + Tangent2D<T>.Left;
     public Node2D<T> Right() => this + Tangent2D<T>.Right;
+
+    public IEnumerable<Node2D<T>> NodesTo( Node2D<T> other, bool includeEnd = false )
+    {
+        var dir = (other - this).ToDirection();
+        var current = this;
+        while ( current != other )
+        {
+            yield return current;
+            current += dir;
+        }
+        if ( includeEnd ) yield return other;
+    }
 }
 
-public record struct Tangent2D<T>( T X, T Y )
+public readonly record struct Tangent2D<T>( T X, T Y )
 where T : INumber<T>
 {
     public static IEnumerable<Tangent2D<T>> Directions()
@@ -41,6 +53,15 @@ where T : INumber<T>
         yield return new Tangent2D<T>( -T.One, T.Zero );
         yield return new Tangent2D<T>( T.Zero, -T.One );
         yield return new Tangent2D<T>( T.One, T.Zero );
+    }
+
+    public Tangent2D<T> ToDirection()
+    {
+        if ( X != T.Zero && Y != T.Zero )
+        {
+            throw new ArgumentException( $"Cannot make {this} into a direction." );
+        }
+        return new( X.Sign(), Y.Sign() );
     }
 
     public override string ToString() => $"[{X}, {Y}]";
