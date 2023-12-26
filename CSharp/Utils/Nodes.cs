@@ -103,6 +103,7 @@ where T : INumber<T>
 
     // Various norms
     public T LInf() => T.Max( T.Abs( X ), T.Abs( Y ) );
+    public T L1() => T.Abs( X ) + T.Abs( Y );
 
 }
 
