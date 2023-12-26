@@ -8,7 +8,7 @@ public sealed class Day18 : IPuzzle
     public IEnumerable<(TrenchWall naive, TrenchWall hex)> ActualWalls() => "2023/inputdata/day18.txt".GetLines().Select( line => Helpers.TrenchWallParser.Parse( line ) );
     public void Part1()
     {
-        var start = new LongPoint( 0, 0 );
+        var start = new Node2D<long>( 0, 0 );
         var (end, area, circumference) = ActualWalls().Select( item => item.naive )
         .Aggregate(
             seed: (start, area: 0L, circumference: 0L),
@@ -25,7 +25,7 @@ public sealed class Day18 : IPuzzle
 
     public void Part2()
     {
-        var start = new LongPoint( 0, 0 );
+        var start = new Node2D<long>( 0, 0 );
         var (end, area, circumference) = ActualWalls().Select( item => item.hex )
         .Aggregate(
             seed: (start, area: 0L, circumference: 0L),
@@ -41,30 +41,15 @@ public sealed class Day18 : IPuzzle
     }
 }
 
-public record struct LongPoint( long X, long Y )
-: IEquatable<LongPoint>
-{
-    public override string ToString()
-    {
-        return $"({X}, {Y})";
-    }
-
-    public static LongPoint operator +( LongPoint p1, (int x, int y) d )
-        => new LongPoint( p1.X + d.x, p1.Y + d.y );
-    public static (long x, long y) operator -( LongPoint p1, LongPoint p2 )
-        => (p2.X - p1.X, p2.Y - p1.Y);
-
-    public long Cross( LongPoint other ) => X * other.Y - Y * other.X;
-}
-
-public record struct TrenchWall( (int x, int y) Direction, int Length )
+public record struct TrenchWall( Tangent2D<int> Direction, int Length )
 {
     public override string ToString()
     {
         return $"{Helpers.DirectionToChar( Direction )} {Length}";
     }
 
-    public LongPoint StartAt( LongPoint start ) => new LongPoint( start.X + Length * Direction.x, start.Y + Length * Direction.y );
+    public Node2D<long> StartAt( Node2D<long> start ) =>
+        new Node2D<long>( start.X + Length * Direction.X, start.Y + Length * Direction.Y );
     public static TrenchWall FromHex( string hex )
     {
         var dir = Helpers.CharToDirection( hex[^1] switch {
