@@ -40,45 +40,7 @@ public class Node
     }
 }
 
-public class Rope
-{
-    public Node Head { get; set; } = new();
 
-    public List<Node> Tail { get; private set; }
-
-    public Rope(int tailLength)
-    {
-        if (tailLength < 1)
-        {
-            throw new Exception("Tail must be at least 1 knot long");
-        }
-
-        // Create a new (distinct) Node element for each knot:
-        Tail = Enumerable.Range(0, tailLength).Select(item => new Node()).ToList();
-    }
-    public HashSet<(int, int)> Visited { get; } = new();
-
-    public void Move(Directions dir)
-    {
-        // Update head position:
-        var dx = dir switch
-        {
-            Directions.R => (0, 1),
-            Directions.L => (0, -1),
-            Directions.U => (1, 0),
-            Directions.D => (-1, 0),
-            _ => throw new Exception($"Unknown direction {dir}")
-        };
-        Head.Move(dx);
-        Node prev = Head;
-        foreach (var knot in Tail)
-        {
-            knot.MoveTowards(prev);
-            prev = knot;
-        }
-        Visited.Add(prev.Point);
-    }
-}
 
 public static class Helpers
 {
