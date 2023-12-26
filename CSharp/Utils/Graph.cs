@@ -108,7 +108,7 @@ public static class Graph
     }
 }
 
-public static class ShortestPath
+public static partial class ShortestPath
 {
     public static long BFS<T>( T source, T target, Func<T, IEnumerable<T>> adjacentNodes )
     where T : IEquatable<T> => Graph.BFS( source, adjacentNodes ).First( item => item.node.Equals( target ) ).dist;

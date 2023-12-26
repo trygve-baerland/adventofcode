@@ -34,4 +34,17 @@ public static class Math
     }
 
     public static long ManhattanRadius( long x ) => 4 * x;
+
+    public static T CheckedSum<T>( T a, T b )
+    where T : INumber<T>, IMinMaxValue<T>
+    {
+        try
+        {
+            return checked(a + b);
+        }
+        catch ( OverflowException )
+        {
+            return T.MaxValue;
+        }
+    }
 }
