@@ -36,30 +36,25 @@ public sealed class Day11 : IPuzzle
 }
 
 
-public class GalaxyMap( char[][] map )
+public record class GalaxyMap( char[][] map ) : CharMap( map )
 {
-    public char[][] Map { get; private set; } = map;
-
-    public int Width { get => Map[0].Length; }
-    public int Height { get => Map.Length; }
-
     public IEnumerable<char> Row( int row ) => Map[row];
     public IEnumerable<char> Coliumn( int column ) => Map.Select( r => r[column] );
-    private HashSet<Point>? _galaxies = null;
-    public HashSet<Point> Galaxies
+    private HashSet<Node2D<int>>? _galaxies = null;
+    public HashSet<Node2D<int>> Galaxies
     {
         get {
             if ( _galaxies == null )
             {
-                _galaxies = new HashSet<Point>( Map.SelectMany( ( r, x ) => r.Select( ( c, y ) => (x, y, c) ) )
+                _galaxies = new HashSet<Node2D<int>>( Map.SelectMany( ( r, x ) => r.Select( ( c, y ) => (x, y, c) ) )
                     .Where( rc => rc.c == '#' )
-                    .Select( rc => new Point( rc.x, rc.y ) ) );
+                    .Select( rc => new Node2D<int>( rc.x, rc.y ) ) );
             }
             return _galaxies;
         }
     }
 
-    public long Distance( Point p1, Point p2, long dilation = 2 )
+    public long Distance( Node2D<int> p1, Node2D<int> p2, long dilation = 2 )
     {
         var dx = System.Math.Sign( p2.X - p1.X );
         var dy = System.Math.Sign( p2.Y - p1.Y );

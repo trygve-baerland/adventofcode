@@ -60,6 +60,7 @@ where T : INumber<T>
 
     // Make convertible to tuple
     public static implicit operator (T x, T y)( Tangent2D<T> t ) => (t.X, t.Y);
+    public static implicit operator Tangent2D<T>( (T x, T y) t ) => new( t.x, t.y );
 
     // Some vector operations
     public T Dot( Tangent2D<T> other ) => X * other.X + Y * other.Y;

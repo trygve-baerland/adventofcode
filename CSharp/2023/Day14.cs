@@ -5,8 +5,8 @@ namespace AoC.Y2023;
 
 public sealed class Day14 : IPuzzle
 {
-    public (TiltablePlatform platform, List<Point> rollables) TestData { get; } = TiltablePlatform.FromLines( "2023/inputdata/day14_test.txt".GetLines().ToList() );
-    public (TiltablePlatform platform, List<Point> rollables) ActualData { get; } = TiltablePlatform.FromLines( "2023/inputdata/day14.txt".GetLines().ToList() );
+    public (TiltablePlatform platform, List<Node2D<int>> rollables) TestData { get; } = TiltablePlatform.FromLines( "2023/inputdata/day14_test.txt".GetLines().ToList() );
+    public (TiltablePlatform platform, List<Node2D<int>> rollables) ActualData { get; } = TiltablePlatform.FromLines( "2023/inputdata/day14.txt".GetLines().ToList() );
     public void Part1()
     {
         var (platform, rollables) = ActualData;
@@ -44,14 +44,14 @@ public sealed class Day14 : IPuzzle
     }
 }
 
-public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
+public class TiltablePlatform( IEnumerable<Node2D<int>> rocks, int height, int width )
 {
 
     public int Height { get; } = height;
     public int Width { get; } = width;
-    public List<Point> Rocks { get; } = rocks.ToList();
+    public List<Node2D<int>> Rocks { get; } = rocks.ToList();
 
-    public static (TiltablePlatform platform, List<Point> rollables) FromLines( List<string> lines )
+    public static (TiltablePlatform platform, List<Node2D<int>> rollables) FromLines( List<string> lines )
     {
         var rocks = lines.WhereIsChar( '#' );
         var rollables = lines.WhereIsChar( 'O' ).ToList();
@@ -66,13 +66,13 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
         return result;
     }
 
-    public void Print( List<Point> rollables )
+    public void Print( List<Node2D<int>> rollables )
     {
         for ( int i = 0; i < Height; i++ )
         {
             for ( int j = 0; j < Width; j++ )
             {
-                var point = new Point( i, j );
+                var point = new Node2D<int>( i, j );
                 if ( Rocks.Contains( point ) )
                 {
                     Console.Write( '#' );
@@ -90,13 +90,13 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
         }
     }
 
-    public long ScorePosition( List<Point> rollables ) =>
+    public long ScorePosition( List<Node2D<int>> rollables ) =>
         rollables.Select( r => ( long ) Width * r.X * r.Y ).Sum();
 
-    public List<Point> RollNorth( List<Point> rollables )
+    public List<Node2D<int>> RollNorth( List<Node2D<int>> rollables )
     {
         // Going north, we sort every rollable by X,
-        List<Point> result = new();
+        List<Node2D<int>> result = new();
         foreach ( var rock in rollables.OrderBy( p => p.X ) )
         {
             var x = Rocks.Where( r => r.Y == rock.Y && r.X < rock.X )
@@ -111,15 +111,15 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
 
             x = System.Math.Max( x, otherX );
 
-            result.Add( new Point( x + 1, rock.Y ) );
+            result.Add( new Node2D<int>( x + 1, rock.Y ) );
         }
         return result;
     }
 
-    public List<Point> RollSouth( List<Point> rollables )
+    public List<Node2D<int>> RollSouth( List<Node2D<int>> rollables )
     {
         // Going north, we sort every rollable by X in descending order,
-        List<Point> result = new();
+        List<Node2D<int>> result = new();
         foreach ( var rock in rollables.OrderBy( p => -p.X ) )
         {
             var x = Rocks.Where( r => r.Y == rock.Y && r.X > rock.X )
@@ -134,14 +134,14 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
 
             x = System.Math.Min( x, otherX );
 
-            result.Add( new Point( x - 1, rock.Y ) );
+            result.Add( new Node2D<int>( x - 1, rock.Y ) );
         }
         return result;
     }
-    public List<Point> RollWest( List<Point> rollables )
+    public List<Node2D<int>> RollWest( List<Node2D<int>> rollables )
     {
         // Going north, we sort every rollable by Y,
-        List<Point> result = new();
+        List<Node2D<int>> result = new();
         foreach ( var rock in rollables.OrderBy( p => p.Y ) )
         {
             var x = Rocks.Where( r => r.X == rock.X && r.Y < rock.Y )
@@ -156,14 +156,14 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
 
             x = System.Math.Max( x, otherX );
 
-            result.Add( new Point( rock.X, x + 1 ) );
+            result.Add( new Node2D<int>( rock.X, x + 1 ) );
         }
         return result;
     }
-    public List<Point> RollEast( List<Point> rollables )
+    public List<Node2D<int>> RollEast( List<Node2D<int>> rollables )
     {
         // Going north, we sort every rollable by Y,
-        List<Point> result = new();
+        List<Node2D<int>> result = new();
         foreach ( var rock in rollables.OrderBy( p => -p.Y ) )
         {
             var x = Rocks.Where( r => r.X == rock.X && r.Y > rock.Y )
@@ -178,17 +178,17 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
 
             x = System.Math.Min( x, otherX );
 
-            result.Add( new Point( rock.X, x - 1 ) );
+            result.Add( new Node2D<int>( rock.X, x - 1 ) );
         }
         return result;
     }
 
-    public List<Point> Cycle( List<Point> rollables )
+    public List<Node2D<int>> Cycle( List<Node2D<int>> rollables )
     {
         return RollEast( RollSouth( RollWest( RollNorth( rollables ) ) ) );
     }
 
-    public long ScoreNorth( List<Point> rollables )
+    public long ScoreNorth( List<Node2D<int>> rollables )
     {
         return rollables.Select( r => ( long ) Height - r.X ).Sum();
     }
@@ -196,10 +196,10 @@ public class TiltablePlatform( IEnumerable<Point> rocks, int height, int width )
 
 public static partial class Helpers
 {
-    public static IEnumerable<Point> WhereIsChar( this IEnumerable<string> source, char c ) =>
+    public static IEnumerable<Node2D<int>> WhereIsChar( this IEnumerable<string> source, char c ) =>
         source.SelectMany( ( line, i ) =>
             line.Select( ( c, j ) => (c, j) )
                 .Where( t => t.c == c )
-                .Select( t => new Point( i, t.j ) )
+                .Select( t => new Node2D<int>( i, t.j ) )
         );
 }

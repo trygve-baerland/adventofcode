@@ -30,13 +30,13 @@ public sealed class Day21 : IPuzzle
             .Where( i => i.IsEven() )
             .Select( i => Utils.Math.ManhattanRadius( i ) )
             .Sum() + 1;
-        result += numEvenTiles * map.DoStepsFrom( new Point( midx, midy ), 2 * L + parity );
+        result += numEvenTiles * map.DoStepsFrom( new Node2D<int>( midx, midy ), 2 * L + parity );
 
         long numOddTiles = Enumerable.Range( 1, N - 1 )
             .Where( i => !i.IsEven() )
             .Select( i => Utils.Math.ManhattanRadius( i ) )
             .Sum();
-        result += numOddTiles * map.DoStepsFrom( new Point( midx, midy ), 2 * L + (1 - parity) );
+        result += numOddTiles * map.DoStepsFrom( new Node2D<int>( midx, midy ), 2 * L + (1 - parity) );
 
         // Now we need to add up everything around the border:
         // The corner tiles:
@@ -65,29 +65,23 @@ public sealed class Day21 : IPuzzle
     }
 }
 
-public record struct GardenMap( char[][] Map )
+public record class GardenMap( char[][] Map ) : CharMap( Map )
 {
-    public int Height => Map.Length;
-    public int Width => Map[0].Length;
 
-    public char this[Point p] => Map[p.X][p.Y];
-
-    public static GardenMap FromFile( string filename )
-    {
-        return new GardenMap( filename.GetLines().Select( line => line.ToCharArray() ).ToArray() );
-    }
+    public static new GardenMap FromFile( string filename ) =>
+        new GardenMap( filename.GetLines().Select( line => line.ToCharArray() ).ToArray() );
 
     public override string ToString()
     {
         return string.Join( "\n", Map.Select( line => new string( line ) ) );
     }
 
-    public long DoStepsFrom( Point start, int numSteps )
+    public long DoStepsFrom( Node2D<int> start, int numSteps )
     {
-        var queue = new PriorityQueue<Point, int>();
+        var queue = new PriorityQueue<Node2D<int>, int>();
         var parity = numSteps.IsEven();
         queue.Enqueue( start, 0 );
-        var seen = new HashSet<Point>();
+        var seen = new HashSet<Node2D<int>>();
         long result = 0;
         while ( queue.TryDequeue( out var p, out var d ) )
         {
@@ -111,31 +105,31 @@ public record struct GardenMap( char[][] Map )
         return result;
     }
 
-    public bool Contains( Point p ) =>
-        p.X >= 0 && p.X < Height && p.Y >= 0 && p.Y < Width && this[p] != '#';
+    public override bool Contains( Node2D<int> p ) =>
+        base.Contains( p ) && this[p] != '#';
 
-    public Point Find( char c ) =>
+    public Node2D<int> Find( char c ) =>
         Map
         .SelectMany( ( line, x ) => line.Select( ( ch, y ) => (ch, x, y) ) )
         .Where( t => t.ch == c )
-        .Select( t => new Point( t.x, t.y ) )
+        .Select( t => new Node2D<int>( t.x, t.y ) )
         .First();
 
-    public Point Start => Find( 'S' );
+    public Node2D<int> Start => Find( 'S' );
 
-    public IEnumerable<Point> MidPoints()
+    public IEnumerable<Node2D<int>> MidPoints()
     {
-        yield return new Point( Height / 2, 0 );
-        yield return new Point( Height / 2, Width - 1 );
-        yield return new Point( 0, Width / 2 );
-        yield return new Point( Height - 1, Width / 2 );
+        yield return new Node2D<int>( Height / 2, 0 );
+        yield return new Node2D<int>( Height / 2, Width - 1 );
+        yield return new Node2D<int>( 0, Width / 2 );
+        yield return new Node2D<int>( Height - 1, Width / 2 );
     }
 
-    public IEnumerable<Point> CornerPoints()
+    public IEnumerable<Node2D<int>> CornerPoints()
     {
-        yield return new Point( 0, 0 );
-        yield return new Point( 0, Width - 1 );
-        yield return new Point( Height - 1, 0 );
-        yield return new Point( Height - 1, Width - 1 );
+        yield return new Node2D<int>( 0, 0 );
+        yield return new Node2D<int>( 0, Width - 1 );
+        yield return new Node2D<int>( Height - 1, 0 );
+        yield return new Node2D<int>( Height - 1, Width - 1 );
     }
 }

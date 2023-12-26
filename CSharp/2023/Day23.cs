@@ -24,39 +24,29 @@ public sealed class Day23 : IPuzzle
     }
 }
 
-public record class PathMap( char[][] Map )
+public record class PathMap( char[][] Map ) : CharMap( Map )
 {
-    public int Height { get; } = Map.Length;
-    public int Width { get; } = Map[0].Length;
-    public char this[Point p] => Map[p.X][p.Y];
+    public override bool Contains( Node2D<int> p ) =>
+        base.Contains( p ) && this[p] != '#';
 
-    public static PathMap FromFile( string filename ) =>
-        new PathMap(
-            filename
-            .GetLines()
-            .Select( line => line.ToCharArray() )
-            .ToArray()
-        );
-
-    public bool Contains( Point p ) =>
-        p.X >= 0 && p.X < Height && p.Y >= 0 && p.Y < Width && this[p] != '#';
-
+    public static new PathMap FromFile( string path ) =>
+        new( path.GetLines().Select( line => line.ToCharArray() ).ToArray() );
 
 
     public CondensedGraph Condense()
     {
         var result = new CondensedGraph();
-        var start = new Point( 0, 1 );
+        var start = new Node2D<int>( 0, 1 );
         // Add start and end points:
         result.Add( start );
         // Add junction points:
         Junctions().ForEach( result.Add );
-        result.Add( new Point( Height - 1, Width - 2 ) );
+        result.Add( new Node2D<int>( Height - 1, Width - 2 ) );
 
         // Add edges:
         // We do this as a BFS search.
-        var queue = new Queue<(Point p, Point node, int length)>();
-        var seen = new HashSet<Point>();
+        var queue = new Queue<(Node2D<int> p, Node2D<int> node, int length)>();
+        var seen = new HashSet<Node2D<int>>();
         queue.Enqueue( (start, start, 0) );
 
         while ( queue.TryDequeue( out var item ) )
@@ -84,15 +74,15 @@ public record class PathMap( char[][] Map )
         return result;
     }
 
-    public IEnumerable<Point> Junctions()
+    public IEnumerable<Node2D<int>> Junctions()
         => Enumerable.Range( 0, Height ).SelectMany( x =>
-            Enumerable.Range( 0, Width ).Select( y => new Point( x, y ) )
+            Enumerable.Range( 0, Width ).Select( y => new Node2D<int>( x, y ) )
         ).Where( p => isJunction( p ) && Contains( p ) );
 
-    public bool isJunction( Point p ) =>
+    public bool isJunction( Node2D<int> p ) =>
         p.Neighbours().Count( Contains ) > 2;
 
-    public IEnumerable<Point> SlopeNeighbours( Point p )
+    public IEnumerable<Node2D<int>> SlopeNeighbours( Node2D<int> p )
     {
         // If we are on a slope, we can only go one way:
         if ( OnSlope( p ) )
@@ -106,7 +96,7 @@ public record class PathMap( char[][] Map )
             yield break;
         }
         // Otherwise, we can look at every direction:
-        foreach ( var dir in Point.Directions() )
+        foreach ( var dir in Tangent2D<int>.Directions() )
         {
             var next = p + dir;
             // If we are on a slope, we have to have gotten there from the top side:
@@ -121,7 +111,7 @@ public record class PathMap( char[][] Map )
         }
     }
 
-    public IEnumerable<Point> NonSlopedNeighbours( Point p ) =>
+    public IEnumerable<Node2D<int>> NonSlopedNeighbours( Node2D<int> p ) =>
         p.Neighbours().Where( Contains );
 
     public static (int x, int y) SlopeDirection( char c ) => c switch {
@@ -132,7 +122,7 @@ public record class PathMap( char[][] Map )
         _ => throw new ArgumentException( $"Invalid slope direction: {c}" )
     };
 
-    public bool OnSlope( Point p ) => this[p] switch {
+    public bool OnSlope( Node2D<int> p ) => this[p] switch {
         '>' => true,
         '<' => true,
         '^' => true,
@@ -145,7 +135,7 @@ public record class PathMap( char[][] Map )
 
 public class CondensedGraph
 {
-    public Dictionary<Point, long> Points { get; } = new();
+    public Dictionary<Node2D<int>, long> Points { get; } = new();
     public Dictionary<(long start, long end), int> Edges { get; } = new();
 
     public int this[long p1, long p2]
@@ -154,13 +144,13 @@ public class CondensedGraph
         set => Edges[(p1, p2)] = value;
     }
 
-    public long this[Point p] => Points[p];
+    public long this[Node2D<int> p] => Points[p];
 
     public long Start => Points.Select( kvp => kvp.Value ).Min();
     public long End => Points.Select( kvp => kvp.Value ).Max();
 
-    public bool Contains( Point p ) => Points.ContainsKey( p );
-    public void Add( Point p ) => Points.Add( p, 1L << Points.Count );
+    public bool Contains( Node2D<int> p ) => Points.ContainsKey( p );
+    public void Add( Node2D<int> p ) => Points.Add( p, 1L << Points.Count );
 
     public override string ToString()
     {

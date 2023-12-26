@@ -1,4 +1,3 @@
-using System.Runtime.CompilerServices;
 using System.Text;
 using AoC.Utils;
 namespace AoC.Y2023;
@@ -17,16 +16,16 @@ public sealed class Day17 : IPuzzle
     public void Part1()
     {
         var map = ActualLayout;
-        var initial = new StandardCrucible( new Point( 0, 0 ), (0, 1), 0 );
-        var result = map.MinimizeHeatLoss( initial, new Point( map.Height - 1, map.Width - 1 ) );
+        var initial = new StandardCrucible( new Node2D<int>( 0, 0 ), (0, 1), 0 );
+        var result = map.MinimizeHeatLoss( initial, new Node2D<int>( map.Height - 1, map.Width - 1 ) );
         Console.WriteLine( result );
     }
 
     public void Part2()
     {
         var map = ActualLayout;
-        var initial = new UltraCrucible( new Point( 0, 0 ), (0, 1), 0 );
-        var result = map.MinimizeHeatLoss( initial, new Point( map.Height - 1, map.Width - 1 ) );
+        var initial = new UltraCrucible( new Node2D<int>( 0, 0 ), (0, 1), 0 );
+        var result = map.MinimizeHeatLoss( initial, new Node2D<int>( map.Height - 1, map.Width - 1 ) );
         Console.WriteLine( result );
     }
 }
@@ -37,7 +36,7 @@ public class FactoryLayout( int[][] heatMap )
     public int Height => HeatMap.Length;
     public int Width => HeatMap[0].Length;
 
-    public long this[Point p] => HeatMap[p.X][p.Y];
+    public long this[Node2D<int> p] => HeatMap[p.X][p.Y];
 
     public override string ToString()
     {
@@ -49,7 +48,7 @@ public class FactoryLayout( int[][] heatMap )
         return builder.ToString();
     }
 
-    public long MinimizeHeatLoss<T>( T from, Point to )
+    public long MinimizeHeatLoss<T>( T from, Node2D<int> to )
     where T : struct, ICrucible<T>
     {
         var queue = new PriorityQueue<T, long>();
@@ -74,7 +73,7 @@ public class FactoryLayout( int[][] heatMap )
         throw new Exception( "No path found" );
     }
 
-    public bool Contains( Point p ) => p.X >= 0 && p.X < Height && p.Y >= 0 && p.Y < Width;
+    public bool Contains( Node2D<int> p ) => p.X >= 0 && p.X < Height && p.Y >= 0 && p.Y < Width;
 
     private IEnumerable<T> GetNext<T>( T crucible )
     where T : ICrucible<T>
@@ -84,15 +83,15 @@ public class FactoryLayout( int[][] heatMap )
 public interface ICrucible<T>
 where T : ICrucible<T>
 {
-    public Point Point { get; }
+    public Node2D<int> Point { get; }
     public IEnumerable<T> GetNext();
 
     public bool CanStop();
 }
-public struct StandardCrucible( Point point, (int x, int y) direction, int steps )
+public struct StandardCrucible( Node2D<int> point, (int x, int y) direction, int steps )
 : ICrucible<StandardCrucible>
 {
-    public Point Point { get; } = point;
+    public Node2D<int> Point { get; } = point;
     public (int x, int y) Direction { get; } = direction;
     public int Steps { get; } = steps;
 
@@ -116,10 +115,10 @@ public struct StandardCrucible( Point point, (int x, int y) direction, int steps
     public override int GetHashCode() => HashCode.Combine( Point, Direction, Steps );
 }
 
-public struct UltraCrucible( Point point, (int x, int y) direction, int steps )
+public struct UltraCrucible( Node2D<int> point, (int x, int y) direction, int steps )
 : ICrucible<UltraCrucible>
 {
-    public Point Point { get; } = point;
+    public Node2D<int> Point { get; } = point;
     public (int x, int y) Direction { get; } = direction;
     public int Steps { get; } = steps;
 

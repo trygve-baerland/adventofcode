@@ -46,54 +46,6 @@ public sealed class Day10 : IPuzzle
     }
 }
 
-public struct Point( int x, int y ) : IEquatable<Point>
-{
-    public int X { get; } = x;
-    public int Y { get; } = y;
-
-    public override string ToString()
-    {
-        return $"({X}, {Y})";
-    }
-
-    public static IEnumerable<(int x, int y)> Directions()
-    {
-        yield return (0, 1);
-        yield return (1, 0);
-        yield return (0, -1);
-        yield return (-1, 0);
-    }
-
-    public Point Down() => new Point( X + 1, Y );
-    public Point Up() => new Point( X - 1, Y );
-    public Point Left() => new Point( X, Y - 1 );
-    public Point Right() => new Point( X, Y + 1 );
-
-    public IEnumerable<Point> Neighbours()
-    {
-        foreach ( var d in Directions() )
-        {
-            yield return this + d;
-        }
-    }
-
-    public (int x, int y) ToTuple() => (X, Y);
-    public static (int x, int y) operator -( Point p1, Point p2 ) => (p1.X - p2.X, p1.Y - p2.Y);
-    public static Point operator +( Point p1, (int x, int y) p2 ) => new( p1.X + p2.x, p1.Y + p2.y );
-    public static bool operator ==( Point p1, Point p2 ) => p1.Equals( p2 );
-    public static bool operator !=( Point p1, Point p2 ) => !p1.Equals( p2 );
-    public int Cross( Point p ) => X * p.Y - Y * p.X;
-
-    public bool Equals( Point other ) => X == other.X && Y == other.Y;
-
-    public override bool Equals( object? obj ) => obj is Point other && Equals( other );
-
-    public override int GetHashCode()
-    {
-        return HashCode.Combine( X, Y );
-    }
-}
-
 public record class PipeMap( char[][] chars ) : CharMap( chars )
 {
     private char? sVal = null;

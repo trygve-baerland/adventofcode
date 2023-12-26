@@ -24,25 +24,18 @@ public sealed class Day13 : IPuzzle
     }
 }
 
-public class MirrorPattern( char[][] pattern )
+public record class MirrorPattern( char[][] pattern ) : CharMap( pattern )
 {
-    public char[][] Pattern { get; } = pattern;
-
-    public char this[Point p] => Pattern[p.Y][p.X];
-
-    public int Width => Pattern[0].Length;
-    public int Height => Pattern.Length;
-
     public override string ToString()
     {
         var sb = new StringBuilder();
-        Pattern.Select( ( e, i ) => (e, i) ).ForEach( item => sb.AppendLine( $"{item.i}: {new string( item.e )}" ) );
+        Map.Select( ( e, i ) => (e, i) ).ForEach( item => sb.AppendLine( $"{item.i}: {new string( item.e )}" ) );
         return sb.ToString();
     }
 
-    public List<char> Row( int index ) => Pattern[index].ToList();
-    public IEnumerable<List<char>> Rows() => Pattern.Select( row => row.ToList() );
-    public List<char> Column( int index ) => Pattern.Select( row => row[index] ).ToList();
+    public List<char> Row( int index ) => Map[index].ToList();
+    public IEnumerable<List<char>> Rows() => Map.Select( row => row.ToList() );
+    public List<char> Column( int index ) => Map.Select( row => row[index] ).ToList();
     public IEnumerable<List<char>> Columns() => Enumerable.Range( 0, Width ).Select( Column );
 
     public static int IsReflected( List<char> symbols, int index )

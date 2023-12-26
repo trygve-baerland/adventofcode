@@ -10,7 +10,7 @@ public sealed class Day16 : IPuzzle
     {
         var map = ActualMap;
         var result = map.EnergizeFrom(
-            new LaserHead( new Point( 0, 0 ), (0, 1) )
+            new LaserHead( new Node2D<int>( 0, 0 ), (0, 1) )
         );
         Console.WriteLine( result );
     }
@@ -20,18 +20,18 @@ public sealed class Day16 : IPuzzle
         var map = ActualMap;
         // Left side:
         var result = Enumerable.Range( 0, map.Height )
-            .Select( i => new LaserHead( new Point( i, 0 ), (0, 1) ) )
+            .Select( i => new LaserHead( new Node2D<int>( i, 0 ), (0, 1) ) )
             .Then(
                 Enumerable.Range( 0, map.Height )
-                .Select( i => new LaserHead( new Point( i, map.Width - 1 ), (0, -1) ) )
+                .Select( i => new LaserHead( new Node2D<int>( i, map.Width - 1 ), (0, -1) ) )
             )
             .Then(
                 Enumerable.Range( 0, map.Width )
-                .Select( i => new LaserHead( new Point( 0, i ), (1, 0) ) )
+                .Select( i => new LaserHead( new Node2D<int>( 0, i ), (1, 0) ) )
             )
             .Then(
                 Enumerable.Range( 0, map.Width )
-                .Select( i => new LaserHead( new Point( map.Height - 1, i ), (-1, 0) ) )
+                .Select( i => new LaserHead( new Node2D<int>( map.Height - 1, i ), (-1, 0) ) )
             )
             .Select( map.EnergizeFrom )
             .Max();
@@ -40,10 +40,10 @@ public sealed class Day16 : IPuzzle
     }
 }
 
-public struct LaserHead( Point Position, (int x, int y) Direction )
+public struct LaserHead( Node2D<int> Position, (int x, int y) Direction )
 : IEquatable<LaserHead>
 {
-    public Point Position { get; } = Position;
+    public Node2D<int> Position { get; } = Position;
     public (int x, int y) Direction { get; } = Direction;
 
     public bool Equals( LaserHead other )
@@ -57,13 +57,8 @@ public struct LaserHead( Point Position, (int x, int y) Direction )
     }
 }
 
-public class MirrorMap( char[][] map )
+public record class MirrorMap( char[][] map ) : CharMap( map )
 {
-    public char[][] Map { get; } = map;
-    public int Height { get; } = map.Length;
-    public int Width { get; } = map[0].Length;
-
-    public char this[Point p] => Map[p.X][p.Y];
     public IEnumerable<LaserHead> GetNext( LaserHead head )
     {
         foreach ( var dir in Split( head.Direction, this[head.Position] ) )
@@ -97,10 +92,6 @@ public class MirrorMap( char[][] map )
         return visited.GroupBy( head => head.Position )
             .Count();
     }
-
-    public bool Contains( Point point ) =>
-        point.X >= 0 && point.X < Height &&
-        point.Y >= 0 && point.Y < Width;
 
     public static MirrorMap FromChars( IEnumerable<IEnumerable<char>> chars )
     {
