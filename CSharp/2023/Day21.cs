@@ -108,12 +108,6 @@ internal record class GardenMap( char[][] Map ) : CharMap( Map )
     public override bool Contains( Node2D<int> p ) =>
         base.Contains( p ) && this[p] != '#';
 
-    public Node2D<int> Find( char c ) =>
-        Map
-        .SelectMany( ( line, x ) => line.Select( ( ch, y ) => (ch, x, y) ) )
-        .Where( t => t.ch == c )
-        .Select( t => new Node2D<int>( t.x, t.y ) )
-        .First();
 
     public Node2D<int> Start => Find( 'S' );
 

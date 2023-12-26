@@ -1,9 +1,10 @@
 using System.Text;
+using AoC.Y2023;
 
 namespace AoC.Utils;
 
 internal record class Map<T>( T[][] Data )
-where T : struct
+where T : struct, IEquatable<T>
 {
     public int Height => Data.Length;
     public int Width => Data[0].Length;
@@ -30,6 +31,9 @@ where T : struct
         }
         return builder.ToString();
     }
+
+    public Node2D<int> Find( T item ) =>
+        Coordinates().First( node => this[node].Equals( item ) );
 }
 
 internal record class CharMap( char[][] Data ) : Map<char>( Data )
