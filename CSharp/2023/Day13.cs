@@ -5,8 +5,8 @@ namespace AoC.Y2023;
 
 public sealed class Day13 : IPuzzle
 {
-    public List<MirrorPattern> TestPatterns { get; } = Helpers.MirrorPatterns.Parse( string.Concat( "2023/inputdata/day13_test.txt".Stream().GetChars() ) ).ToList();
-    public List<MirrorPattern> ActualPatterns { get; } = Helpers.MirrorPatterns.Parse( string.Concat( "2023/inputdata/day13.txt".Stream().GetChars() ) ).ToList();
+    private List<MirrorPattern> TestPatterns { get; } = Helpers.MirrorPatterns.Parse( string.Concat( "2023/inputdata/day13_test.txt".Stream().GetChars() ) ).ToList();
+    private List<MirrorPattern> ActualPatterns { get; } = Helpers.MirrorPatterns.Parse( string.Concat( "2023/inputdata/day13.txt".Stream().GetChars() ) ).ToList();
     public void Part1()
     {
         long result = ActualPatterns
@@ -24,18 +24,18 @@ public sealed class Day13 : IPuzzle
     }
 }
 
-public record class MirrorPattern( char[][] pattern ) : CharMap( pattern )
+internal record class MirrorPattern( char[][] pattern ) : CharMap( pattern )
 {
     public override string ToString()
     {
         var sb = new StringBuilder();
-        Map.Select( ( e, i ) => (e, i) ).ForEach( item => sb.AppendLine( $"{item.i}: {new string( item.e )}" ) );
+        Data.Select( ( e, i ) => (e, i) ).ForEach( item => sb.AppendLine( $"{item.i}: {new string( item.e )}" ) );
         return sb.ToString();
     }
 
-    public List<char> Row( int index ) => Map[index].ToList();
-    public IEnumerable<List<char>> Rows() => Map.Select( row => row.ToList() );
-    public List<char> Column( int index ) => Map.Select( row => row[index] ).ToList();
+    public new List<char> Row( int index ) => Data[index].ToList();
+    public IEnumerable<List<char>> Rows() => Data.Select( row => row.ToList() );
+    public new List<char> Column( int index ) => Data.Select( row => row[index] ).ToList();
     public IEnumerable<List<char>> Columns() => Enumerable.Range( 0, Width ).Select( Column );
 
     public static int IsReflected( List<char> symbols, int index )
@@ -76,10 +76,10 @@ public static partial class Helpers
     public static readonly Parser<char[]> MirrorRow =
         MirrorSymbol.AtLeastOnce().Select( x => x.ToArray() );
 
-    public static readonly Parser<MirrorPattern> MirrorPattern =
+    internal static readonly Parser<MirrorPattern> MirrorPattern =
         MirrorRow.DelimitedBy( Parse.Char( '\n' ) ).Select( rows => new MirrorPattern( rows.ToArray() ) );
 
-    public static readonly Parser<IEnumerable<MirrorPattern>> MirrorPatterns =
+    internal static readonly Parser<IEnumerable<MirrorPattern>> MirrorPatterns =
         MirrorPattern.DelimitedBy( Parse.LineEnd.AtLeastOnce() );
     #endregion parsers
 }

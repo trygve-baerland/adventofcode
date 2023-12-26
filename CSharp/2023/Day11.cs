@@ -4,8 +4,8 @@ namespace AoC.Y2023;
 
 public sealed class Day11 : IPuzzle
 {
-    public GalaxyMap TestData = new GalaxyMap( "2023/inputdata/day11_test.txt".GetLines().Select( l => l.ToCharArray() ).ToArray() );
-    public GalaxyMap ActualData = new GalaxyMap( "2023/inputdata/day11.txt".GetLines().Select( l => l.ToCharArray() ).ToArray() );
+    private GalaxyMap TestData = new GalaxyMap( "2023/inputdata/day11_test.txt".GetLines().Select( l => l.ToCharArray() ).ToArray() );
+    private GalaxyMap ActualData = new GalaxyMap( "2023/inputdata/day11.txt".GetLines().Select( l => l.ToCharArray() ).ToArray() );
 
     public void Part1()
     {
@@ -36,17 +36,15 @@ public sealed class Day11 : IPuzzle
 }
 
 
-public record class GalaxyMap( char[][] map ) : CharMap( map )
+internal record class GalaxyMap( char[][] map ) : CharMap( map )
 {
-    public IEnumerable<char> Row( int row ) => Map[row];
-    public IEnumerable<char> Coliumn( int column ) => Map.Select( r => r[column] );
     private HashSet<Node2D<int>>? _galaxies = null;
     public HashSet<Node2D<int>> Galaxies
     {
         get {
             if ( _galaxies == null )
             {
-                _galaxies = new HashSet<Node2D<int>>( Map.SelectMany( ( r, x ) => r.Select( ( c, y ) => (x, y, c) ) )
+                _galaxies = new HashSet<Node2D<int>>( Data.SelectMany( ( r, x ) => r.Select( ( c, y ) => (x, y, c) ) )
                     .Where( rc => rc.c == '#' )
                     .Select( rc => new Node2D<int>( rc.x, rc.y ) ) );
             }
@@ -78,7 +76,7 @@ public record class GalaxyMap( char[][] map ) : CharMap( map )
         var y = p1.Y;
         while ( y != p2.Y )
         {
-            if ( !Coliumn( y ).Contains( '#' ) )
+            if ( !Column( y ).Contains( '#' ) )
             {
                 distance += dilation;
             }

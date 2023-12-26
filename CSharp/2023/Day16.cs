@@ -4,8 +4,8 @@ namespace AoC.Y2023;
 
 public sealed class Day16 : IPuzzle
 {
-    public MirrorMap TestMap { get; } = MirrorMap.FromChars( "2023/inputdata/day16_test.txt".Stream().GetChars().Split( '\n' ) );
-    public MirrorMap ActualMap { get; } = MirrorMap.FromChars( "2023/inputdata/day16.txt".Stream().GetChars().Split( '\n' ) );
+    private MirrorMap TestMap { get; } = MirrorMap.FromChars( "2023/inputdata/day16_test.txt".Stream().GetChars().Split( '\n' ) );
+    private MirrorMap ActualMap { get; } = MirrorMap.FromChars( "2023/inputdata/day16.txt".Stream().GetChars().Split( '\n' ) );
     public void Part1()
     {
         var map = ActualMap;
@@ -57,7 +57,7 @@ public struct LaserHead( Node2D<int> Position, (int x, int y) Direction )
     }
 }
 
-public record class MirrorMap( char[][] map ) : CharMap( map )
+internal record class MirrorMap( char[][] map ) : CharMap( map )
 {
     public IEnumerable<LaserHead> GetNext( LaserHead head )
     {
@@ -102,7 +102,7 @@ public record class MirrorMap( char[][] map ) : CharMap( map )
     {
         var builder = new StringBuilder();
 
-        foreach ( var row in Map )
+        foreach ( var row in Data )
         {
             builder.AppendLine( string.Concat( row ) );
         }

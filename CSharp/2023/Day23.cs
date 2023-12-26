@@ -4,8 +4,8 @@ namespace AoC.Y2023;
 
 public sealed class Day23 : IPuzzle
 {
-    public PathMap TestMap() => PathMap.FromFile( "2023/inputdata/day23_test.txt" );
-    public PathMap ActualMap() => PathMap.FromFile( "2023/inputdata/day23.txt" );
+    private PathMap TestMap() => PathMap.FromFile( "2023/inputdata/day23_test.txt" );
+    private PathMap ActualMap() => PathMap.FromFile( "2023/inputdata/day23.txt" );
 
     public void Part1()
     {
@@ -24,7 +24,7 @@ public sealed class Day23 : IPuzzle
     }
 }
 
-public record class PathMap( char[][] Map ) : CharMap( Map )
+internal record class PathMap( char[][] Map ) : CharMap( Map )
 {
     public override bool Contains( Node2D<int> p ) =>
         base.Contains( p ) && this[p] != '#';

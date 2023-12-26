@@ -4,12 +4,12 @@ namespace AoC.Y2023;
 
 public sealed class Day17 : IPuzzle
 {
-    public FactoryLayout TestLayout { get; } = new FactoryLayout( "2023/inputdata/day17_test.txt".GetLines()
+    private FactoryLayout TestLayout { get; } = new FactoryLayout( "2023/inputdata/day17_test.txt".GetLines()
         .Select( line => line.Select( c => c - '0' ).ToArray() )
         .ToArray()
     );
 
-    public FactoryLayout ActualLayout { get; } = new FactoryLayout( "2023/inputdata/day17.txt".GetLines()
+    private FactoryLayout ActualLayout { get; } = new FactoryLayout( "2023/inputdata/day17.txt".GetLines()
         .Select( line => line.Select( c => c - '0' ).ToArray() )
         .ToArray()
     );
@@ -30,23 +30,8 @@ public sealed class Day17 : IPuzzle
     }
 }
 
-public class FactoryLayout( int[][] heatMap )
+internal record class FactoryLayout( int[][] heatMap ) : IntMap( heatMap )
 {
-    public int[][] HeatMap { get; } = heatMap;
-    public int Height => HeatMap.Length;
-    public int Width => HeatMap[0].Length;
-
-    public long this[Node2D<int> p] => HeatMap[p.X][p.Y];
-
-    public override string ToString()
-    {
-        var builder = new StringBuilder();
-        foreach ( var row in HeatMap )
-        {
-            builder.AppendLine( string.Concat( row ) );
-        }
-        return builder.ToString();
-    }
 
     public long MinimizeHeatLoss<T>( T from, Node2D<int> to )
     where T : struct, ICrucible<T>
@@ -72,8 +57,6 @@ public class FactoryLayout( int[][] heatMap )
         }
         throw new Exception( "No path found" );
     }
-
-    public bool Contains( Node2D<int> p ) => p.X >= 0 && p.X < Height && p.Y >= 0 && p.Y < Width;
 
     private IEnumerable<T> GetNext<T>( T crucible )
     where T : ICrucible<T>

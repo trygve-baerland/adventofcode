@@ -3,8 +3,8 @@ namespace AoC.Y2023;
 
 public sealed class Day21 : IPuzzle
 {
-    public GardenMap TestMap() => GardenMap.FromFile( "2023/inputdata/day21_test.txt" );
-    public GardenMap ActualMap() => GardenMap.FromFile( "2023/inputdata/day21.txt" );
+    private GardenMap TestMap() => GardenMap.FromFile( "2023/inputdata/day21_test.txt" );
+    private GardenMap ActualMap() => GardenMap.FromFile( "2023/inputdata/day21.txt" );
 
     public void Part1()
     {
@@ -65,7 +65,7 @@ public sealed class Day21 : IPuzzle
     }
 }
 
-public record class GardenMap( char[][] Map ) : CharMap( Map )
+internal record class GardenMap( char[][] Map ) : CharMap( Map )
 {
 
     public static new GardenMap FromFile( string filename ) =>

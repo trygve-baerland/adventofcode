@@ -4,8 +4,8 @@ namespace AoC.Y2023;
 
 public sealed class Day10 : IPuzzle
 {
-    public PipeMap TestMap { get; } = new PipeMap( "2023/inputdata/day10_test.txt".Stream().GetLines().Select( line => line.ToCharArray() ).ToArray() );
-    public PipeMap ActualMap { get; } = new PipeMap( "2023/inputdata/day10.txt".Stream().GetLines().Select( line => line.ToCharArray() ).ToArray() );
+    private PipeMap TestMap { get; } = new PipeMap( "2023/inputdata/day10_test.txt".Stream().GetLines().Select( line => line.ToCharArray() ).ToArray() );
+    private PipeMap ActualMap { get; } = new PipeMap( "2023/inputdata/day10.txt".Stream().GetLines().Select( line => line.ToCharArray() ).ToArray() );
     public void Part1()
     {
         var map = ActualMap;
@@ -46,7 +46,7 @@ public sealed class Day10 : IPuzzle
     }
 }
 
-public record class PipeMap( char[][] chars ) : CharMap( chars )
+internal record class PipeMap( char[][] chars ) : CharMap( chars )
 {
     private char? sVal = null;
     public char SVal
@@ -81,7 +81,7 @@ public record class PipeMap( char[][] chars ) : CharMap( chars )
 
     public Node2D<int> GetStart()
     {
-        return Map.Select(
+        return Data.Select(
             ( row, i ) => (i, row.Select(
                 ( col, j ) => (col, j)
             )
