@@ -80,6 +80,8 @@ where T : INumber<T>
     where TOther : INumber<TOther> =>
         new( TOther.CreateChecked( X ), TOther.CreateChecked( Y ) );
 
+    // Various norms
+    public T LInf() => T.Max( T.Abs( X ), T.Abs( Y ) );
 
 }
 
