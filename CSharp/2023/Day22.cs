@@ -41,22 +41,14 @@ public static class CubeExtensions
 {
     public static SandStack LetFall( this IEnumerable<Cube> cubes ) =>
         cubes
-        .OrderBy( c => c.Z.Start )
+        .OrderBy( c => c.Z.A )
         .Aggregate( new SandStack(), ( stack, cube ) => {
             stack.LetFall( cube );
             return stack;
         } );
 }
 
-public record struct Rectangle( Interval X, Interval Y )
-{
-    public override string ToString() => $"({X}, {Y})";
-
-    public bool Overlaps( Rectangle other ) =>
-        X.Intersects( other.X ) && Y.Intersects( other.Y );
-}
-
-public record struct Cube( Rectangle Horizontal, Interval Z )
+public record struct Cube( Rectangle<long> Horizontal, Interval<long> Z )
 {
     public override string ToString() => $"({Horizontal}, {Z})";
 
@@ -66,11 +58,11 @@ public record struct Cube( Rectangle Horizontal, Interval Z )
         var starts = parts[0].Split( ',' );
         var ends = parts[1].Split( ',' );
         return new Cube(
-            new Rectangle(
-                new Interval( long.Parse( starts[0] ), long.Parse( ends[0] ) ),
-                new Interval( long.Parse( starts[1] ), long.Parse( ends[1] ) )
+            new Rectangle<long>(
+                new Interval<long>( long.Parse( starts[0] ), long.Parse( ends[0] ) ),
+                new Interval<long>( long.Parse( starts[1] ), long.Parse( ends[1] ) )
             ),
-            new Interval( long.Parse( starts[2] ), long.Parse( ends[2] ) )
+            new Interval<long>( long.Parse( starts[2] ), long.Parse( ends[2] ) )
         );
     }
 
@@ -93,7 +85,7 @@ public record class FallingSandCube
         // is supported by something else
         Supports.All( s => s.SupportedBy.Count > 1 );
 
-    public long MaxHeight() => AtHeight + Cube.Z.Length();
+    public long MaxHeight() => AtHeight + Cube.Z.Count();
 
     public void RestsOn( FallingSandCube other )
     {

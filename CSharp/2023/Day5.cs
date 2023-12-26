@@ -21,35 +21,19 @@ public sealed class Day5 : IPuzzle
         var (seeds, mappings) = Helpers.InputFile.Parse( ActualData );
 
         var result = seeds.Clump( 2 )
-            .Select( pair => new Interval( pair.First(), pair.First() + pair.Skip( 1 ).First() - 1 ) ) // Create intervals
+            .Select( pair => new Interval<long>( pair.First(), pair.First() + pair.Skip( 1 ).First() - 1 ) ) // Create intervals
             .Select( interval =>
                 mappings.Aggregate(
-                    new[] { interval } as IEnumerable<Interval>,
-                    ( i, m ) => m.Map( i ) )
+                    seed: new[] { interval } as IEnumerable<Interval<long>>,
+                    func: ( i, m ) => m.Map( i ) )
             )
             .Flatten()
-            .Select( i => i.Start )
+            .Select( i => i.A )
             .Min();
 
         Console.WriteLine( $"Result: {result}" );
 
     }
-}
-
-public struct Interval( long start, long end )
-{
-    public long Start { get; } = start;
-    public long End { get; } = end;
-
-    public override string ToString()
-    {
-        return $"[{Start}, {End}]";
-    }
-
-    public bool Intersects( Interval other ) =>
-        Start <= other.End && other.Start <= End;
-
-    public long Length() => End - Start + 1;
 }
 
 public class MappingItem( long destinationRangeStart, long sourceRangeStart, long rangeLength )
@@ -143,10 +127,10 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
         return source;
     }
 
-    public IEnumerable<Interval> Map( Interval interval )
+    public IEnumerable<Interval<long>> Map( Interval<long> interval )
     {
-        var start = interval.Start;
-        var end = interval.End;
+        var start = interval.A;
+        var end = interval.B;
 
         var enumerator = Items.GetEnumerator();
         while ( enumerator.MoveNext() && start < end )
@@ -157,7 +141,7 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
                 // "end" might be contained in the current interval:
                 var xEnd = System.Math.Min( end, item.SourceRangeStart + item.RangeLength - 1 );
                 // If xEnd <= end we are done with this interval
-                var newInterval = new Interval(
+                var newInterval = new Interval<long>(
                     item.Map( start ),
                     item.Map( xEnd )
                 );
@@ -167,7 +151,7 @@ public class Mapping( string destName, string sourceName, IEnumerable<MappingIte
         }
     }
 
-    public IEnumerable<Interval> Map( IEnumerable<Interval> intervals ) =>
+    public IEnumerable<Interval<long>> Map( IEnumerable<Interval<long>> intervals ) =>
         intervals.Select( Map ).Flatten();
 }
 
