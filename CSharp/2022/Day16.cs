@@ -1,5 +1,6 @@
 ﻿using Sprache;
 using AoC.Utils;
+using AoC.Y2023;
 
 namespace AoC.Y2022;
 
@@ -31,18 +32,13 @@ public sealed class Day16 : IPuzzle
             valve => valve.ConnectedValves.Select( name => valves[name] )
         );
 
-        var path = TunnelHelpers.OptimalRelease(
+        var result = TunnelHelpers.OptimalRelease(
             source: valves["AA"],
             shortestPathMapping: shortestPaths,
             timeout: 30
         );
-        var part1 = TunnelHelpers.EvaluatePath( path, 30 );
-        Console.WriteLine( $"Part 1: {part1}" );
-        foreach ( var (valve, time) in path )
-        {
-            Console.Write( $"{valve.Name}[{time}], " );
-        }
-        Console.WriteLine( "\n-------" );
+
+        Console.WriteLine( result );
     }
 
     public void Part2()
@@ -78,74 +74,75 @@ public class Valve
     }
 }
 
+
 public static class TunnelHelpers
 {
-    public static List<(Valve valve, int time)> OptimalRelease(
+    private record struct SearchState(
+        Valve current,
+        int time,
+        int pressureRelease,
+        ulong visited
+    )
+    {
+        public IEnumerable<SearchState> Next( FloydWarshallMapping<Valve, int> mapping, int timeout )
+        {
+            //Console.WriteLine( $"Considering {this}" );
+            // Thread.Sleep( 500 );
+            if ( time >= timeout )
+            {
+                yield break;
+            }
+            // First, if we haven't turned the current valve:
+            var currentBit = GetBit( mapping.Index[current] );
+            if ( (visited & currentBit) == 0 && current.Rate > 0 )
+            {
+                var newTime = time + 1;
+                var release = (timeout - newTime) * current.Rate;
+                yield return new SearchState(
+                    current: current,
+                    time: time + 1,
+                    pressureRelease: pressureRelease + release,
+                    visited: visited | currentBit
+                );
+            }
+            // Go through each neighbour:
+            foreach ( var (valve, index) in mapping.Index )
+            {
+                // We only consider it if it hasn't been visited
+                var nextBit = GetBit( index );
+                if ( (visited & nextBit) == 0 && valve.Rate > 0 )
+                {
+                    var newTime = time + mapping.Distances[mapping.Index[current], index] + 1;
+                    if ( newTime < timeout )
+                    {
+                        var release = (timeout - newTime) * valve.Rate;
+                        yield return new SearchState(
+                            current: valve,
+                            time: newTime,
+                            pressureRelease: pressureRelease + release,
+                            visited: visited | nextBit
+                        );
+                    }
+                }
+            }
+        }
+
+        private static ulong GetBit( int index ) => 1UL << (index + 1);
+
+        public override string ToString() => $"({current.Name}, {time}, {pressureRelease}, {Convert.ToString( ( long ) visited, 2 )})";
+    }
+    public static long OptimalRelease(
         Valve source,
         FloydWarshallMapping<Valve, int> shortestPathMapping,
         int timeout
     )
     {
-        // Initialize stuff:
-        var stack = new Stack<(Valve node, IEnumerator<(Valve, int)> neighbours, int time, int total, List<(Valve valve, int time)> visited)>();
-        stack.Push(
-            (
-                source,
-                GetFrom( shortestPathMapping, source, item => -item.Rate ).Where( item => item.valve.Rate > 0 ).GetEnumerator(),
-                0,
-                0,
-                new List<(Valve valve, int time)>() {
-                    (source, 0)
-                }
-            )
-        );
-        var totals = new List<List<(Valve valve, int time)>>();
-        while ( stack.Count > 0 )
-        {
-            var (v, neighbours, time, total, visited) = stack.Peek();
-            var last = visited.Last();
-            if ( v.Name != last.valve.Name )
-            {
-                throw new Exception( $"Data inconsistency in name {v.Name} != {last.valve.Name}" );
-            }
-            if ( time != last.time )
-            {
-                throw new Exception( $"Data inconsistency in time {time} != {last.time}" );
-            }
-            if ( neighbours.MoveNext() )
-            {
-                // We are considering going to w next:
-                var (w, dist) = neighbours.Current;
-                var newTime = time + dist + 1; // Going there and turning it on.
-                if ( newTime < timeout && !visited.Select( item => item.valve.Name ).Contains( w.Name ) ) // We only care if can get there in time
-                {
-                    var newVisited = new List<(Valve valve, int time)>( visited ) // I've been promised this makes a copy...
-                    {
-                        (w, newTime)
-                    };
-                    var newTotal = total + (timeout - newTime) * w.Rate;
-                    stack.Push(
-                        (
-                            node: w,
-                            neighbours: GetFrom( shortestPathMapping, w, item => -item.Rate ).Where( item => item.valve.Rate > 0 ).GetEnumerator(),
-                            time: newTime,
-                            total: newTotal,
-                            visited: newVisited
-                        )
-                    );
-                }
-            }
-            else
-            {
-                var item = stack.Pop();
-                totals.Add( item.visited );
-            }
-        }
-        // Get best path:
-        Console.WriteLine( $"Searched {totals.Count} paths" );
-        var pathVals = totals.Select( ( item, i ) => EvaluatePath( item, timeout ) ).ToList();
-        var index = pathVals.IndexOf( pathVals.Max() );
-        return totals[index];
+        var initial = new SearchState( source, 0, 0, 0L );
+        // We'll do it as a DFS search:
+        return Graph.DFS(
+            source: initial,
+            adjacentNodes: state => state.Next( mapping: shortestPathMapping, timeout: timeout )
+        ).Select( item => item.pressureRelease ).Max();
     }
 
     public static int OptimalElephantRelease(
@@ -154,93 +151,21 @@ public static class TunnelHelpers
         int timeout
     )
     {
-        // Initialize stuff:
-        var stack = new Stack<(Valve node, IEnumerator<(Valve, int)> neighbours, int time, int total, List<(Valve valve, int time)> visited)>();
-        stack.Push(
-            (
-                source,
-                GetFrom( shortestPathMapping, source, item => -item.Rate ).Where( item => item.valve.Rate > 0 ).GetEnumerator(),
-                0,
-                0,
-                new List<(Valve valve, int time)>() {
-                    (source, 0)
-                }
-            )
-        );
-        var totals = new List<List<(Valve valve, int time)>>();
-        while ( stack.Count > 0 )
-        {
-            var (v, neighbours, time, total, visited) = stack.Peek();
-            var last = visited.Last();
-            if ( v.Name != last.valve.Name )
-            {
-                throw new Exception( $"Data inconsistency in name {v.Name} != {last.valve.Name}" );
-            }
-            if ( time != last.time )
-            {
-                throw new Exception( $"Data inconsistency in time {time} != {last.time}" );
-            }
-            if ( neighbours.MoveNext() )
-            {
-                // We are considering going to w next:
-                var (w, dist) = neighbours.Current;
-                var newTime = time + dist + 1; // Going there and turning it on.
-                if ( newTime < timeout && !visited.Select( item => item.valve.Name ).Contains( w.Name ) ) // We only care if can get there in time
-                {
-                    var newVisited = new List<(Valve valve, int time)>( visited ) // I've been promised this makes a copy...
-                    {
-                        (w, newTime)
-                    };
-                    var newTotal = total + (timeout - newTime) * w.Rate;
-                    stack.Push(
-                        (
-                            node: w,
-                            neighbours: GetFrom( shortestPathMapping, w, item => -item.Rate ).Where( item => item.valve.Rate > 0 ).GetEnumerator(),
-                            time: newTime,
-                            total: newTotal,
-                            visited: newVisited
-                        )
-                    );
-                }
-            }
-            else
-            {
-                var item = stack.Pop();
-                totals.Add( item.visited );
-            }
-        }
+        var initial = new SearchState( source, 0, 0, 0L );
+        var candidates = Graph.DFS(
+            source: initial,
+            adjacentNodes: state => state.Next( mapping: shortestPathMapping, timeout: timeout )
+        )
+        .Select( state => (state.visited, state.pressureRelease) )
+        .ToList();
+
         // Get best path:
-        Console.WriteLine( $"Searched {totals.Count} paths" );
-        var pathVals = totals.Select( ( item, i ) => EvaluatePath( item, timeout ) ).ToList();
-        return totals.CrossProduct( totals )
-            .Where( item => NoOverlap( item.Item1, item.Item2 ) )
-            .Select( item => EvaluatePath( item.Item1, timeout ) + EvaluatePath( item.Item2, timeout ) )
+        Console.WriteLine( $"Searched {candidates.Count} paths" );
+        return candidates
+            .CrossProduct( candidates )
+            .Where( item => (item.Item1.visited & item.Item2.visited) == 0 )
+            .Select( item => item.Item1.pressureRelease + item.Item2.pressureRelease )
             .Max();
-    }
-
-    public static int EvaluatePath( IEnumerable<(Valve valve, int time)> visited, int timeout )
-    {
-        return visited.Select( item => (timeout - item.time) * item.valve.Rate ).Sum();
-    }
-
-    public static bool NoOverlap( IEnumerable<(Valve valve, int time)> path1, IEnumerable<(Valve valve, int time)> path2 )
-    {
-        return !path1.Skip( 1 ).Select( item => item.valve.Name )
-            .Intersect( path2.Skip( 1 ).Select( item => item.valve.Name ) )
-            .Any();
-    }
-
-    private static IEnumerable<(Valve valve, int dist)> GetFrom<TKey>(
-        FloydWarshallMapping<Valve, int> mapping,
-        Valve valve,
-        Func<Valve, TKey> selector
-    )
-    {
-        var i = mapping.Index[valve];
-        return Enumerable.Range( 0, mapping.Index.Count )
-            .Where( j => j != i )
-            .Select( j => (mapping.Index.Find( j ), mapping.Distances[i, j]) )
-            .OrderBy( item => selector( item.Item1 ) );
     }
 }
 public static class TunnelParsing
