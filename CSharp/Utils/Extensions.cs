@@ -185,4 +185,6 @@ public static class Extensions
             < 0 => -T.One,
             _ => T.Zero
         };
+
+    public static IEnumerable<T> IgnoreAt<T>( this IEnumerable<T> items, int k ) => items.Where( ( item, index ) => index != k );
 }
