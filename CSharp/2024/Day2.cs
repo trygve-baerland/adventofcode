@@ -1,17 +1,16 @@
 using Sprache;
 using AoC.Utils;
-using System.Diagnostics;
 namespace AoC.Y2024;
 
 public sealed class Day2 : IPuzzle
 {
     private IEnumerable<Report> TestReports = "2024/inputdata/day2_test.txt"
         .GetLines()
-        .Select( line => Report.FromString( line ) ).ToList();
+        .Select( Report.FromString ).ToList();
 
     private IEnumerable<Report> Reports = "2024/inputdata/day2.txt"
         .GetLines()
-        .Select( line => Report.FromString( line ) ).ToList();
+        .Select( Report.FromString ).ToList();
     public void Part1()
     {
         var result = Reports.Where( rep => rep.IsSafe() ).Count();
