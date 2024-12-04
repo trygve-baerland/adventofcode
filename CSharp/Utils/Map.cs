@@ -33,6 +33,9 @@ where T : struct, IEquatable<T>
 
     public Node2D<int> Find( T item ) =>
         Coordinates().First( node => this[node].Equals( item ) );
+
+    public IEnumerable<Node2D<int>> Where( Func<T, bool> pred ) =>
+        Coordinates().Where( node => pred( this[node] ) );
 }
 
 internal record class CharMap( char[][] Data ) : Map<char>( Data )
@@ -40,6 +43,11 @@ internal record class CharMap( char[][] Data ) : Map<char>( Data )
 
     public static CharMap FromFile( string path ) =>
         new( path.GetLines().Select( line => line.ToCharArray() ).ToArray() );
+
+    public override string ToString()
+    {
+        return base.ToString();
+    }
 
 }
 

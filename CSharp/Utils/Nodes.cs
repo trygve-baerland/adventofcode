@@ -42,6 +42,8 @@ where T : INumber<T>
         }
         if ( includeEnd ) yield return other;
     }
+
+    public IEnumerable<Node2D<T>> Along( Tangent2D<T> dir ) => this.FixPoint( n => n + dir );
 }
 
 public readonly record struct Tangent2D<T>( T X, T Y )
@@ -55,6 +57,14 @@ where T : INumber<T>
         yield return new Tangent2D<T>( T.One, T.Zero );
     }
 
+    public static IEnumerable<Tangent2D<T>> Diagonals()
+    {
+        yield return new Tangent2D<T>( T.One, T.One );
+        yield return new Tangent2D<T>( T.One, -T.One );
+        yield return new Tangent2D<T>( -T.One, -T.One );
+        yield return new Tangent2D<T>( -T.One, T.One );
+    }
+
     public Tangent2D<T> ToDirection()
     {
         if ( X != T.Zero && Y != T.Zero )
@@ -63,6 +73,9 @@ where T : INumber<T>
         }
         return new( X.Sign(), Y.Sign() );
     }
+
+    public Tangent2D<T> ProjX() => new Tangent2D<T>( X, T.Zero );
+    public Tangent2D<T> ProjY() => new Tangent2D<T>( T.Zero, Y );
 
     public override string ToString() => $"[{X}, {Y}]";
 
