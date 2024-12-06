@@ -49,6 +49,13 @@ internal record class CharMap( char[][] Data ) : Map<char>( Data )
         return base.ToString();
     }
 
+    public CharMap With( char c, Node2D<int> pos )
+    {
+        var result = new CharMap( Data.Select( row => row.Select( col => col ).ToArray() ).ToArray() );
+        if ( Contains( pos ) ) result.Data[pos.X][pos.Y] = c;
+        return result;
+    }
+
 }
 
 internal record class IntMap( int[][] Data ) : Map<int>( Data )

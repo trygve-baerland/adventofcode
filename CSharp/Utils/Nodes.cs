@@ -77,6 +77,9 @@ where T : INumber<T>
     public Tangent2D<T> ProjX() => new Tangent2D<T>( X, T.Zero );
     public Tangent2D<T> ProjY() => new Tangent2D<T>( T.Zero, Y );
 
+    public Tangent2D<T> TurnRight() => new Tangent2D<T>( Y, -X );
+    public Tangent2D<T> TurnLeft() => new Tangent2D<T>( -Y, X );
+
     public override string ToString() => $"[{X}, {Y}]";
 
     public static Tangent2D<T> operator +( Tangent2D<T> lhs, Tangent2D<T> rhs ) =>
