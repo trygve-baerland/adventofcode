@@ -47,4 +47,9 @@ public static class Math
             return T.MaxValue;
         }
     }
+
+    public static long Concat( long a, long b )
+    {
+        return long.Parse( a.ToString() + b.ToString() );
+    }
 }
