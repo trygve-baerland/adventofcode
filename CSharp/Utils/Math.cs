@@ -48,8 +48,9 @@ public static class Math
         }
     }
 
-    public static long Concat( long a, long b )
+    public static T Concat<T>( T a, T b )
+    where T : INumber<T>
     {
-        return long.Parse( a.ToString() + b.ToString() );
+        return T.Parse( a.ToString() + b.ToString(), null );
     }
 }
