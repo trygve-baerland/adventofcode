@@ -1,6 +1,6 @@
-using MathNet.Numerics.LinearAlgebra;
 using System.Globalization;
 using System.Numerics;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace AoC.Utils;
 

@@ -1,4 +1,4 @@
-﻿using AoC.Utils;
+using AoC.Utils;
 namespace AoC.Y2022;
 
 public sealed class Day9 : IPuzzle
@@ -59,7 +59,8 @@ internal record struct RopeMove( Directions Direction, int Distance )
         if ( !Enum.TryParse( items[0], out Directions dir ) )
         {
             throw new Exception( $"Unable to parse direction {items[0]}" );
-        };
+        }
+        ;
         return new( dir, int.Parse( items[1] ) );
     }
 }

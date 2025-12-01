@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Text;
-using Sprache;
 using AoC.Utils;
+using Sprache;
 namespace AoC.Y2023;
 
 public sealed class Day25 : IPuzzle

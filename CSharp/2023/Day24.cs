@@ -1,5 +1,5 @@
-using MathNet.Numerics.LinearAlgebra;
 using AoC.Utils;
+using MathNet.Numerics.LinearAlgebra;
 namespace AoC.Y2023;
 
 public sealed class Day24 : IPuzzle

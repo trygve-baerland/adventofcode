@@ -1,4 +1,4 @@
-﻿using AoC.Utils;
+using AoC.Utils;
 namespace AoC.Y2022;
 public sealed class Day4 : IPuzzle
 {

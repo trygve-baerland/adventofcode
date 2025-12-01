@@ -1,6 +1,6 @@
+using System.Text;
 using AoC.Utils;
 using Sprache;
-using System.Text;
 namespace AoC.Y2023;
 
 

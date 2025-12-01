@@ -1,5 +1,5 @@
-using AoC.Utils;
 using System.Text.RegularExpressions;
+using AoC.Utils;
 namespace AoC.Y2024;
 
 public sealed class Day3 : IPuzzle

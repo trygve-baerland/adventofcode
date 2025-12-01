@@ -1,5 +1,5 @@
-using Sprache;
 using AoC.Utils;
+using Sprache;
 namespace AoC.Y2024;
 
 public sealed class Day2 : IPuzzle

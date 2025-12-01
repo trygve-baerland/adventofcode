@@ -1,6 +1,6 @@
-﻿using System.Linq.Expressions;
-using Sprache;
+using System.Linq.Expressions;
 using AoC.Utils;
+using Sprache;
 namespace AoC.Y2022;
 
 public sealed class Day11 : IPuzzle

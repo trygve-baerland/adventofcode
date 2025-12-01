@@ -1,5 +1,5 @@
-using AoC.Utils;
 using System.Text;
+using AoC.Utils;
 namespace AoC.Y2023;
 
 public sealed class Day16 : IPuzzle

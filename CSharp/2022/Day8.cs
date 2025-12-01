@@ -1,4 +1,4 @@
-﻿using System.ComponentModel;
+using System.ComponentModel;
 using AoC.Utils;
 
 namespace AoC.Y2022;
