@@ -42,8 +42,3 @@ public sealed class Day4 : IPuzzle
         Console.WriteLine( removed.Count() );
     }
 }
-
-static partial class Helpers
-{
-
-}
