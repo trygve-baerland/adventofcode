@@ -22,6 +22,18 @@ where T : INumber<T>
             yield return this + dir;
         }
     }
+
+    public IEnumerable<Node2D<T>> NeighboursWithDiagonals()
+    {
+        foreach ( var dir in Tangent2D<T>.Directions() )
+        {
+            yield return this + dir;
+        }
+        foreach ( var dir in Tangent2D<T>.Diagonals() )
+        {
+            yield return this + dir;
+        }
+    }
     public Tangent2D<T> ToTangent() => new( X, Y );
 
     public override string ToString() => $"({X}, {Y})";

@@ -5,15 +5,42 @@ namespace AoC.Y2025;
 
 public sealed class Day4 : IPuzzle
 {
-    public IEnumerable<string> TestData =
-        "2025/inputdata/day4_test.txt".GetLines();
+    private CharMap TestData = CharMap.FromFile( "2025/inputdata/day4_test.txt" );
+    private CharMap Data = CharMap.FromFile( "2025/inputdata/day4.txt" );
 
-    public IEnumerable<string> Data =
-        "2025/inputdata/day4.txt".GetLines();
+    public void Part1()
+    {
+        var map = Data;
+        var result = map.Coordinates()
+            .Where( x => map[x] == '@' && x.NeighboursWithDiagonals()
+                .Where( y => map.Contains( y ) && map[y] == '@' )
+                .Count() < 4
+            )
+            .Count();
+        Console.WriteLine( result );
+    }
 
-    public void Part1() { }
+    public void Part2()
+    {
+        var map = Data;
+        var removed = new HashSet<Node2D<int>>();
+        while ( true )
+        {
+            var cands = map.Coordinates()
+                .Where( x => map[x] == '@' && x.NeighboursWithDiagonals()
+                    .Where( y => map.Contains( y ) && map[y] == '@' && !removed.Contains( y ) )
+                    .Count() < 4
+                )
+                .ToList();
+            if ( cands.All( x => removed.Contains( x ) ) )
+            {
+                break;
+            }
+            cands.ForEach( x => removed.Add( x ) );
 
-    public void Part2() { }
+        }
+        Console.WriteLine( removed.Count() );
+    }
 }
 
 static partial class Helpers
