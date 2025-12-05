@@ -1,6 +1,8 @@
 using System.Numerics;
+using MathNet.Numerics;
 
 namespace AoC.Utils;
+
 public static class Extensions
 {
     public static IEnumerable<string> GetLines( this string filename )
@@ -16,6 +18,7 @@ public static class Extensions
         }
     }
 
+
     public static string GetText( this string filename )
     {
         return File.ReadAllText( filename );
@@ -28,6 +31,26 @@ public static class Extensions
             while ( enumerator.MoveNext() )
             {
                 yield return enumerator.Take( n ).ToList();
+            }
+        }
+    }
+
+    public static IEnumerable<(T, T)> TakeTwo<T>( this IEnumerable<T> items )
+    {
+        using ( var iterator = items.GetEnumerator() )
+        {
+            // Get first elements:
+            if ( !iterator.MoveNext() )
+            {
+                // iterator is empty
+                yield break;
+            }
+            var prev = iterator.Current;
+            while ( iterator.MoveNext() )
+            {
+                var curr = iterator.Current;
+                yield return (prev, curr);
+                prev = curr;
             }
         }
     }

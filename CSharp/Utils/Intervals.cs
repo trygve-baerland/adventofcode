@@ -10,6 +10,9 @@ where T : INumber<T>
         A <= other.B &&
         other.A <= B;
 
+    public Interval<T> Union( Interval<T> other ) =>
+        new Interval<T>( T.Min( A, other.A ), T.Max( B, other.B ) );
+
     public T Length() => B - A;
     public T Count() => Length() + T.One;
 
