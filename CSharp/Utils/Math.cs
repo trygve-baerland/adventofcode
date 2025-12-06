@@ -53,4 +53,31 @@ public static class Math
     {
         return T.Parse( a.ToString() + b.ToString(), null );
     }
+
+    /// <summary>
+    ///  Get number of digits in base 10 of a number
+    /// </summary>
+    /// <typeparam name="T">Number type</typeparam>
+    /// <param name="num">a number</param>
+    /// <returns></returns>
+    public static int NumberOfDigits<T>( this T num )
+    where T : INumber<T>
+    {
+        return ( int ) System.Math.Log10( double.CreateChecked( num ) ) + 1;
+    }
+
+    public static int DigitAt<T>( this T num, int pos )
+    where T : INumber<T>
+    {
+        if ( pos < 0 )
+        {
+            return 0;
+        }
+        var numDigs = num.NumberOfDigits();
+        if ( pos > numDigs )
+        {
+            return 0;
+        }
+        return ( int ) (double.CreateChecked( num ) / System.Math.Pow( 10, numDigs - pos - 1 )) % 10;
+    }
 }

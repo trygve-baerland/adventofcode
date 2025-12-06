@@ -72,21 +72,6 @@ record struct CephNumber( long number, int pos )
     }
 
     public long RegularValue() => number;
-
-    public int NumDigs() => ( int ) System.Math.Log10( number ) + 1;
-    public long DigitAtPos( int x )
-    {
-        if ( x < pos )
-        {
-            return 0;
-        }
-        var digNum = x - pos;
-        if ( digNum > NumDigs() )
-        {
-            return 0;
-        }
-        return (( int ) (number / System.Math.Pow( 10, NumDigs() - digNum - 1 ))) % 10;
-    }
 }
 
 record struct CephalopodEquation( List<CephNumber> numbers, char op )
@@ -111,18 +96,18 @@ record struct CephalopodEquation( List<CephNumber> numbers, char op )
     public IEnumerable<long> CephNumbers()
     {
         var start = numbers.Select( n => n.pos ).Min();
-        var end = numbers.Select( n => n.NumDigs() ).Max();
+        var end = numbers.Select( n => n.number.NumberOfDigits() ).Max();
         for ( int i = start + end - 1; i >= start; i-- )
         {
             long part = 0;
             foreach ( var number in numbers )
             {
-                var dig = number.DigitAtPos( i );
+                var dig = number.number.DigitAt( i - number.pos );
                 if ( dig == 0 && part != 0 )
                 {
                     break;
                 }
-                part = 10 * part + number.DigitAtPos( i );
+                part = 10 * part + dig;
             }
             yield return part;
         }
