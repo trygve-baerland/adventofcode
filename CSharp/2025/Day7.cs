@@ -1,6 +1,5 @@
 
 using AoC.Utils;
-using AoC.Y2023;
 
 namespace AoC.Y2025;
 
@@ -76,30 +75,6 @@ static partial class Helpers
                 var down = node.Down();
                 if ( map.Contains( down ) ) yield return down;
                 break;
-        }
-    }
-
-    public static IEnumerable<(T node, long dist)> BFS<T>( T source, Func<T, IEnumerable<T>> adjacentNodes )
-    where T : IEquatable<T>
-    {
-        var queue = new Queue<(T node, long dist)>();
-        queue.Enqueue( (source, 0L) );
-        var visited = new HashSet<T>();
-        while ( queue.TryDequeue( out var item ) )
-        {
-            var (node, dist) = item;
-            if ( !visited.Contains( node ) )
-            {
-                visited.Add( node );
-                yield return (node, dist);
-                foreach ( var w in adjacentNodes( node ) )
-                {
-                    if ( !visited.Contains( w ) )
-                    {
-                        queue.Enqueue( (w, dist + 1) );
-                    }
-                }
-            }
         }
     }
 }
