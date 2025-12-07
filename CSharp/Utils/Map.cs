@@ -1,4 +1,5 @@
 using System.Text;
+using AoC.Y2023;
 
 namespace AoC.Utils;
 
@@ -7,16 +8,24 @@ where T : struct, IEquatable<T>
 {
     public int Height => Data.Length;
     public int Width => Data[0].Length;
-    public T this[Node2D<int> node] => Data[node.X][node.Y];
+    public T this[Node2D<int> node]
+    {
+        get => Data[node.X][node.Y];
+        set {
+            Data[node.X][node.Y] = value;
+        }
+    }
 
     public virtual bool Contains( Node2D<int> node ) =>
         node.X >= 0 && node.X < Height && node.Y >= 0 && node.Y < Width;
-    public IEnumerable<Node2D<int>> Coordinates() =>
-        Enumerable.Range( 0, Height )
-        .SelectMany( i =>
-            Enumerable.Range( 0, Width )
-            .Select( j => new Node2D<int>( i, j ) )
-        );
+
+    public IEnumerable<Node2D<int>> RowCoordinates( int i ) =>
+        Enumerable.Range( 0, Width ).Select( j => new Node2D<int>( i, j ) );
+
+    public IEnumerable<IEnumerable<Node2D<int>>> AllRows() =>
+        Enumerable.Range( 0, Height ).Select( i => RowCoordinates( i ) );
+    public IEnumerable<Node2D<int>> Coordinates() => AllRows().Flatten();
+
 
     public IEnumerable<T> Row( int row ) => Data[row];
     public IEnumerable<T> Column( int column ) => Data.Select( r => r[column] );
@@ -36,6 +45,16 @@ where T : struct, IEquatable<T>
 
     public IEnumerable<Node2D<int>> Where( Func<T, bool> pred ) =>
         Coordinates().Where( node => pred( this[node] ) );
+
+    public Map<TResult> Select<TResult>( Func<T, TResult> func )
+    where TResult : struct, IEquatable<TResult>
+    {
+        return new Map<TResult>(
+            Data.Select(
+                row => row.Select( func ).ToArray()
+            ).ToArray()
+        );
+    }
 }
 
 internal record class CharMap( char[][] Data ) : Map<char>( Data )
