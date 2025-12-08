@@ -156,6 +156,7 @@ where T : INumber<T>
             T.Parse( parts[2].TrimEnd(), provider )
         );
     }
+
 }
 
 public record struct Tangent3D<T>( T X, T Y, T Z )
@@ -226,4 +227,6 @@ where T : INumber<T>
                 double.CreateChecked(other.Z)
             }
         );
+
+    public T L2() => X * X + Y * Y + Z * Z;
 }
