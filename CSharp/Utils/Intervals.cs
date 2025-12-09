@@ -5,6 +5,8 @@ public record struct Interval<T>( T A, T B )
 where T : INumber<T>
 {
     public bool Contains( T x ) => x >= A && x <= B;
+    public bool Contains( Interval<T> other ) =>
+        Contains( other.A ) && Contains( other.B );
 
     public bool Intersects( Interval<T> other ) =>
         A <= other.B &&

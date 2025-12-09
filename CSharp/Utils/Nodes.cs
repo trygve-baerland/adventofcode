@@ -1,5 +1,7 @@
 using System.Globalization;
 using System.Numerics;
+using System.Security.Cryptography;
+using AoC.Y2023;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace AoC.Utils;
@@ -133,6 +135,16 @@ where T : INumber<T>
     public T LInf() => T.Max( T.Abs( X ), T.Abs( Y ) );
     public T L1() => T.Abs( X ) + T.Abs( Y );
 
+    public double Angle( Tangent2D<T> p2 )
+    {
+        var n1 = Normalize();
+        var n2 = p2.Normalize();
+
+        var theta = System.Math.Sign( n1.Cross( n2 ) ) * System.Math.Acos( n1.Dot( n2 ) );
+        // Now, we need to figure out if the angle is positive or negative.
+        return theta;
+    }
+
 }
 
 public record struct Node3D<T>( T X, T Y, T Z )
@@ -229,4 +241,16 @@ where T : INumber<T>
         );
 
     public T L2() => X * X + Y * Y + Z * Z;
+}
+
+public static class NodeExtension
+{
+    public static int WindingAbout<T>( this IEnumerable<Node2D<T>> curve, Node2D<T> node )
+    where T : INumber<T>
+    {
+        return ( int ) System.Math.Round( curve.TakeTwo()
+            .Select( edge => (edge.Item1 - node).Angle( edge.Item2 - node ) )
+            .Sum() / (2 * System.Math.PI)
+        );
+    }
 }
