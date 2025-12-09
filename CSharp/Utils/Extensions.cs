@@ -55,6 +55,28 @@ public static class Extensions
         }
     }
 
+    public static IEnumerable<(T, T)> CycleTwos<T>( this IEnumerable<T> items )
+    {
+        using ( var iterator = items.GetEnumerator() )
+        {
+            // Get first elements:
+            if ( !iterator.MoveNext() )
+            {
+                // iterator is empty
+                yield break;
+            }
+            var first = iterator.Current;
+            var prev = iterator.Current;
+            while ( iterator.MoveNext() )
+            {
+                var curr = iterator.Current;
+                yield return (prev, curr);
+                prev = curr;
+            }
+            yield return (prev, first);
+        }
+    }
+
     public static IEnumerable<T> Take<T>( this IEnumerator<T> enumerator, int n )
     {
         do

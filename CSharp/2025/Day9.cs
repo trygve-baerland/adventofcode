@@ -28,10 +28,11 @@ public sealed class Day9 : IPuzzle
 
     public void Part2()
     {
-        var data = TestData;
+        var data = Data;
         var result = data.Pairs()
             .Select( p => new RedCarpet( p.Item1, p.Item2 ) )
-            .Where( r => data.TakeTwo()
+            .Where( r => {
+                return data.CycleTwos()
                 .All( edge => {
                     // At least one of the nodes are inside
                     if ( r.StrictContains( edge.Item1 ) || r.StrictContains( edge.Item2 ) )
@@ -42,10 +43,10 @@ public sealed class Day9 : IPuzzle
                     // Now, it can still be invalid, mind you.
                     // Both points must be on the same side of the box,
                     // in either x- or y-direction.
-                    return r.Crosses( edge.Item1, edge.Item2 );
-                } ) )
+                    return r.OutsideOf( edge.Item1, edge.Item2 );
+                } );
+            } )
             .Select( r => {
-                Console.WriteLine( $"{r.A}, {r.B}: {r.Area()}" );
                 return r.Area();
             } )
             .Max();
@@ -62,12 +63,16 @@ record struct RedCarpet( Node2D<long> A, Node2D<long> B )
         return (System.Math.Abs( d.X ) + 1) * (System.Math.Abs( d.Y ) + 1);
     }
 
-    public bool Crosses( Node2D<long> a, Node2D<long> b )
+    public bool OutsideOf( Node2D<long> a, Node2D<long> b )
     {
         var minX = long.Min( A.X, B.X );
+        var maxX = long.Max( A.X, B.X );
         var minY = long.Min( A.Y, B.Y );
-        return a.X <= minX && b.X <= minX ||
-            a.Y <= minY && b.Y <= minY;
+        var maxY = long.Max( A.Y, B.Y );
+        return (a.X <= minX && b.X <= minX) // Both to the left of the box
+        || (a.X >= maxX && b.X >= maxX) // Both to the right of the box
+        || (a.Y <= minY && b.Y <= minY) // Both under the box
+        || (a.Y >= maxY && b.Y >= maxY); // Both over the box
     }
 
     public bool StrictContains( Node2D<long> other )
@@ -76,14 +81,6 @@ record struct RedCarpet( Node2D<long> A, Node2D<long> B )
             other.X < long.Max( A.X, B.X ) &&
             other.Y > long.Min( A.Y, B.Y ) &&
             other.Y < long.Max( A.Y, B.Y );
-    }
-
-    public bool Contains( Node2D<long> other )
-    {
-        return other.X >= long.Min( A.X, B.X ) &&
-            other.X <= long.Max( A.X, B.X ) &&
-            other.Y >= long.Min( A.Y, B.Y ) &&
-            other.Y <= long.Max( A.Y, B.Y );
     }
 }
 
