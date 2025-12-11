@@ -42,24 +42,8 @@ public sealed class Day11 : IPuzzle
     public void Part2()
     {
         var data = Data;
-        (string name, bool dac, bool fft) source = ("svr", false, false);
-        var result = Graph.DFS(
-            source,
-            tup => {
-                //if ( tup.dac || tup.fft ) Console.WriteLine( tup );
-
-                if ( data.Servers.ContainsKey( tup.name ) )
-                {
-                    return data.Servers[tup.name].Outputs
-                    .Select( s =>
-                        (s, tup.dac || s == "dac", tup.fft || s == "fft")
-                    );
-                }
-                return Enumerable.Empty<(string, bool, bool)>();
-            },
-            new EmptySet<(string name, bool dac, bool fft)>()
-        ).Where( node => node.name == "out" && node.dac && node.fft )
-        .Count();
+        var cache = new Dictionary<string, long>();
+        var result = data.ValidPaths();
         Console.WriteLine( result );
     }
 }
@@ -91,6 +75,30 @@ record struct ServerPark( Dictionary<string, ServerDevice> Servers )
     public void Add( ServerDevice server )
     {
         Servers.Add( server.Name, server );
+    }
+
+    public long ValidPaths()
+    {
+        (string name, bool dac, bool fft) source = ("svr", false, false);
+        var servers = Servers;
+        var result = Graph.DFS(
+            source,
+            tup => {
+                //if ( tup.dac || tup.fft ) Console.WriteLine( tup );
+
+                if ( servers.ContainsKey( tup.name ) )
+                {
+                    return servers[tup.name].Outputs
+                    .Select( s =>
+                        (s, tup.dac || s == "dac", tup.fft || s == "fft")
+                    );
+                }
+                return Enumerable.Empty<(string, bool, bool)>();
+            },
+            new EmptySet<(string name, bool dac, bool fft)>()
+        ).Where( node => node.name == "out" && node.dac && node.fft )
+        .Count();
+        return result;
     }
 
     public override readonly string ToString() =>
