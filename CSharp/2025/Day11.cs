@@ -43,12 +43,8 @@ public sealed class Day11 : IPuzzle
     {
         var data = Data;
         var cache = new Dictionary<string, long>();
-        using ( var writer = new StreamWriter( "2025/inputdata/day11.dot" ) )
-        {
-            writer.WriteLine( $"digraph G {{ \n{data.ToDot()} }}" );
-        }
-        //var result = data.ValidPaths();
-        //Console.WriteLine( result );
+        var result = data.ValidPaths();
+        Console.WriteLine( result );
 
     }
 }

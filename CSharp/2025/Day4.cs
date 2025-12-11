@@ -12,11 +12,9 @@ public sealed class Day4 : IPuzzle
     {
         var map = Data;
         var result = map.Coordinates()
-            .Where( x => map[x] == '@' && x.NeighboursWithDiagonals()
-                .Where( y => map.Contains( y ) && map[y] == '@' )
-                .Count() < 4
-            )
-            .Count();
+            .Count( x => map[x] == '@' && x.NeighboursWithDiagonals()
+                .Count( y => map.Contains( y ) && map[y] == '@' ) < 4
+            );
         Console.WriteLine( result );
     }
 
@@ -28,8 +26,7 @@ public sealed class Day4 : IPuzzle
         {
             var cands = map.Coordinates()
                 .Where( x => map[x] == '@' && x.NeighboursWithDiagonals()
-                    .Where( y => map.Contains( y ) && map[y] == '@' && !removed.Contains( y ) )
-                    .Count() < 4
+                    .Count( y => map.Contains( y ) && map[y] == '@' && !removed.Contains( y ) ) < 4
                 )
                 .ToList();
             if ( cands.All( x => removed.Contains( x ) ) )
