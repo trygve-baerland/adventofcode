@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Text;
 using AoC.Utils;
 using AoC.Y2024;
 using Sprache;
@@ -34,8 +35,7 @@ public sealed class Day11 : IPuzzle
                 return Enumerable.Empty<string>();
             },
             new EmptySet<string>()
-        ).Where( node => node.node == "out" )
-        .Count();
+        ).Count( node => node.node == "out" );
         Console.WriteLine( result );
     }
 
@@ -43,8 +43,13 @@ public sealed class Day11 : IPuzzle
     {
         var data = Data;
         var cache = new Dictionary<string, long>();
-        var result = data.ValidPaths();
-        Console.WriteLine( result );
+        using ( var writer = new StreamWriter( "2025/inputdata/day11.dot" ) )
+        {
+            writer.WriteLine( $"digraph G {{ \n{data.ToDot()} }}" );
+        }
+        //var result = data.ValidPaths();
+        //Console.WriteLine( result );
+
     }
 }
 
@@ -63,6 +68,16 @@ record struct ServerDevice( string Name, List<string> Outputs )
     {
         Outputs.Add( name );
     }
+
+    public string ToDot()
+    {
+        var sb = new StringBuilder();
+        foreach ( var s in Outputs )
+        {
+            sb.AppendLine( $"{Name} -> {s}" );
+        }
+        return sb.ToString();
+    }
 }
 
 record struct ServerPark( Dictionary<string, ServerDevice> Servers )
@@ -70,6 +85,16 @@ record struct ServerPark( Dictionary<string, ServerDevice> Servers )
     public static ServerPark FromServers( IEnumerable<ServerDevice> servers )
     {
         return new ServerPark( servers.ToDictionary( s => s.Name ) );
+    }
+
+    public string ToDot()
+    {
+        var sb = new StringBuilder();
+        foreach ( var s in Servers.Values )
+        {
+            sb.AppendLine( s.ToDot() );
+        }
+        return sb.ToString();
     }
 
     public void Add( ServerDevice server )
