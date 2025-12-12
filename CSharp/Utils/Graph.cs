@@ -49,42 +49,27 @@ public static class Graph
         }
     }
 
-    public static IEnumerable<(T node, long dist)> Dijkstra<T>(
-        T source,
-        Func<T, IEnumerable<T>> adjacentNodes
+    public static IEnumerable<(TNode node, TWeight weight)> Dijkstra<TNode, TWeight>(
+        TNode source,
+        Func<TNode, IEnumerable<(TNode node, TWeight dist)>> adjacentNodes
     )
-    where T : IEquatable<T>
+    where TNode : IEquatable<TNode>
+    where TWeight : INumber<TWeight>
     {
-        var queue = new PriorityQueue<T, long>();
-        queue.Enqueue( source, 0L );
-        var seen = new HashSet<T>();
-        while ( queue.TryDequeue( out var node, out var dist ) )
-        {
-            if ( !seen.Contains( node ) )
-            {
-                seen.Add( node );
-                yield return (node, dist);
-                foreach ( var w in adjacentNodes( node ) )
-                {
-                    if ( !seen.Contains( w ) )
-                    {
-                        queue.Enqueue( w, dist + 1 );
-                    }
-                }
-            }
-        }
+        var seen = GraphSet<TNode>.Empty();
+        return Dijkstra( source, adjacentNodes, seen );
     }
 
     public static IEnumerable<(TNode node, TWeight dist)> Dijkstra<TNode, TWeight>(
         TNode source,
-        Func<TNode, IEnumerable<(TNode node, TWeight weight)>> adjacentNodes
+        Func<TNode, IEnumerable<(TNode node, TWeight weight)>> adjacentNodes,
+        IGraphVisitedSet<TNode> seen
     )
     where TNode : IEquatable<TNode>
     where TWeight : INumber<TWeight>
     {
         var queue = new PriorityQueue<TNode, TWeight>();
         queue.Enqueue( source, TWeight.Zero );
-        var seen = new HashSet<TNode>();
         while ( queue.TryDequeue( out var node, out var dist ) )
         {
             if ( !seen.Contains( node ) )
