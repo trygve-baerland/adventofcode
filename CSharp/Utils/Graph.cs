@@ -1,6 +1,19 @@
-using System.Collections;
 using System.Numerics;
 namespace AoC.Utils;
+
+public interface IGraphVisitedSet<T>
+{
+    bool Contains( T item );
+    bool Add( T item );
+}
+
+record class GraphSet<T>( ISet<T> Set ) : IGraphVisitedSet<T>
+{
+    public bool Contains( T item ) => Set.Contains( item );
+    public bool Add( T item ) => Set.Add( item );
+
+    public static GraphSet<T> Empty() => new GraphSet<T>( new HashSet<T>() );
+}
 
 public static class Graph
 {
@@ -9,11 +22,11 @@ public static class Graph
     {
         var queue = new Queue<(T node, long dist)>();
         queue.Enqueue( (source, 0L) );
-        var visited = new HashSet<T>();
+        var visited = GraphSet<T>.Empty();
         return BFS( source, adjacentNodes, visited );
     }
 
-    public static IEnumerable<(T node, long dist)> BFS<T>( T source, Func<T, IEnumerable<T>> adjacentNodes, ISet<T> visited )
+    public static IEnumerable<(T node, long dist)> BFS<T>( T source, Func<T, IEnumerable<T>> adjacentNodes, IGraphVisitedSet<T> visited )
     where T : IEquatable<T>
     {
         var queue = new Queue<(T node, long dist)>();
@@ -92,14 +105,14 @@ public static class Graph
     public static IEnumerable<T> DFS<T>( T source, Func<T, IEnumerable<T>> adjacentNodes )
     where T : IEquatable<T>
     {
-        var explored = new HashSet<T>();
+        var explored = GraphSet<T>.Empty();
         return DFS( source, adjacentNodes, explored );
     }
 
     public static IEnumerable<T> DFS<T>(
         T source,
         Func<T, IEnumerable<T>> adjacentNodes,
-        ISet<T> explored )
+        IGraphVisitedSet<T> explored )
     where T : IEquatable<T>
     {
         var stack = new Stack<(T node, IEnumerator<T> neighbours)>();
@@ -135,12 +148,8 @@ public static partial class ShortestPath
 
 }
 
-public class EmptySet<T> : ISet<T>
+public class EmptySet<T> : IGraphVisitedSet<T>
 {
-    public int Count => 0;
-
-    public bool IsReadOnly => true;
-
     public bool Add( T item )
     {
         return false;
@@ -153,80 +162,5 @@ public class EmptySet<T> : ISet<T>
     public bool Contains( T item )
     {
         return false;
-    }
-
-    public void CopyTo( T[] array, int arrayIndex )
-    {
-        throw new NotImplementedException();
-    }
-
-    public void ExceptWith( IEnumerable<T> other )
-    {
-        throw new NotImplementedException();
-    }
-
-    public IEnumerator<T> GetEnumerator()
-    {
-        throw new NotImplementedException();
-    }
-
-    public void IntersectWith( IEnumerable<T> other )
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool IsProperSubsetOf( IEnumerable<T> other )
-    {
-        throw new NotImplementedException();
-    }
-
-    public bool IsProperSupersetOf( IEnumerable<T> other )
-    {
-        return true;
-    }
-
-    public bool IsSubsetOf( IEnumerable<T> other )
-    {
-        return true;
-    }
-
-    public bool IsSupersetOf( IEnumerable<T> other )
-    {
-        return false;
-    }
-
-    public bool Overlaps( IEnumerable<T> other )
-    {
-        return false;
-    }
-
-    public bool Remove( T item )
-    {
-        return false;
-    }
-
-    public bool SetEquals( IEnumerable<T> other )
-    {
-        return other.Count() == 0;
-    }
-
-    public void SymmetricExceptWith( IEnumerable<T> other )
-    {
-        throw new NotImplementedException();
-    }
-
-    public void UnionWith( IEnumerable<T> other )
-    {
-        throw new NotImplementedException();
-    }
-
-    void ICollection<T>.Add( T item )
-    {
-        throw new NotImplementedException();
-    }
-
-    IEnumerator IEnumerable.GetEnumerator()
-    {
-        return GetEnumerator();
     }
 }
