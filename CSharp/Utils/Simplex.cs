@@ -1,5 +1,4 @@
 using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.Optimization;
 
 namespace AoC.Utils;
 
@@ -9,8 +8,11 @@ public record SimplexProblem
     public required int[] BasicVars { get; set; }
     public required int NumUnknowns { get; init; }
     public required int NumConstraints { get; init; }
-    public int numIterations = 10;
+    public int numIterations = 100;
     private int currentIteration = 0;
+    private static double M = 10000;
+
+    public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1];
 
     public Vector<double> CurrentSolution
     {
@@ -31,14 +33,18 @@ public record SimplexProblem
         if ( b.Count != n ) throw new ArgumentException( "Mismatch in number of constraints." );
         if ( c.Count != m ) throw new ArgumentException( "Mismatch in problem domain" );
 
-        var tab = Matrix<double>.Build.Dense( 1 + n, m + n + 1, 0.0 );
+        var tab = Matrix<double>.Build.Dense( 1 + n, m + n + 2, 0.0 );
         // Set up tableau matrix
-        tab.SetSubMatrix( 0, 0, -c.ToRowMatrix() );
-        tab.SetSubMatrix( 1, 0, A );
-        tab.SetSubMatrix( 1, m, Matrix<double>.Build.DenseIdentity( n ) );
-        tab.SetSubMatrix( 1, m + n, b.ToColumnMatrix() );
-        Console.WriteLine( $"{tab}" );
-        // return
+        tab[0, 0] = 1.0;
+        tab.SetSubMatrix( 0, 1, c.ToRowMatrix() );
+        tab.SetSubMatrix( 1, 1, A );
+        tab.SetSubMatrix( 1, m + 1, Matrix<double>.Build.DenseIdentity( n ) );
+        tab.SetSubMatrix( 1, m + n + 1, b.ToColumnMatrix() );
+        // Set up M-constraints:
+        tab.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+        // The current value for the objective functional will be updated after the Initialize call.
+        //tab[0, tab.ColumnCount - 1] = M * b.Sum();
+
         return new SimplexProblem {
             Tableu = tab,
             // BasicVars is a collection of the column indices for the current BFS (Basic feasible solution)
@@ -51,14 +57,23 @@ public record SimplexProblem
         };
     }
 
+    // Run through inverse iteration n times to get initial tableau
+    public void Initialize()
+    {
+        for ( int i = 0; i < NumConstraints; i++ )
+        {
+            Pivot( Tableu, i + 1, NumUnknowns + i + 1 );
+        }
+    }
+
     private int? GetPivotColumn()
     {
-        var objDiff = Tableu.SubMatrix( 0, 1, 0, NumUnknowns ).ToRowMajorArray();
-        //if ( objDiff.All( f => f < 1E-8 ) )
-        //{
-        //    return null;
-        //}
-        // Get index of least value
+        var objDiff = Tableu.SubMatrix( 0, 1, 1, NumUnknowns + NumConstraints ).ToRowMajorArray();
+        if ( objDiff.All( f => f > -1E-8 ) )
+        {
+            return null;
+        }
+        // Get index of min
         var idx = 0;
         var target = double.MaxValue;
         for ( var i = 0; i < objDiff.Length; i++ )
@@ -69,8 +84,20 @@ public record SimplexProblem
                 idx = i;
             }
         }
-        Console.WriteLine( $"Pivot column is {idx}" );
-        return idx;
+        // Console.WriteLine( $"Pivot column is {idx}" );
+        return idx + 1;
+    }
+
+    private static bool SameSign( double a, double b )
+    {
+        // This evaluationg doesn't work when a or b is close to 0.
+        //return double.Sign( a ) != double.Sign( b );
+        var d1 = double.Abs( b - a );
+        var d2 = double.Abs( double.Abs( b ) - double.Abs( a ) );
+        // Only of the same sign if these two differences are the same.
+        // If not, d1 > d2
+        return d1 <= d2 + 1E-8;
+
     }
 
     private int GetPivotRow( int col )
@@ -81,7 +108,8 @@ public record SimplexProblem
         for ( var i = 1; i < Tableu.RowCount; i++ )
         {
             double cand;
-            if ( double.Abs( Tableu[i, col] ) < 1E-8 )
+            if ( double.Abs( Tableu[i, col] ) < 1E-8 ||
+                !SameSign( Tableu[i, col], Tableu[i, last] ) )
             {
                 cand = double.MaxValue;
             }
@@ -95,61 +123,50 @@ public record SimplexProblem
                 target = cand;
             }
         }
-        Console.WriteLine( $"Pivot row is {jdx}" );
         return jdx;
     }
 
     public bool Iterate()
     {
         var pivotCol = GetPivotColumn();
-        if ( pivotCol is null || currentIteration >= numIterations )
+        if ( pivotCol is null )
         {
             // We're done
             return true;
         }
         // Do iteration
         var pivotRow = GetPivotRow( pivotCol.Value );
-        Tableu = Pivot( Tableu, pivotRow, pivotCol.Value );
+        // Console.WriteLine( $"Pivoting about ({pivotRow}, {pivotCol.Value})" );
+        Pivot( Tableu, pivotRow, pivotCol.Value );
 
         // Update basic vars:
-        var oldBasic = BasicVars[pivotRow - 1];
-        var newBasic = pivotCol;
-        for ( int i = 0; i < BasicVars.Length; i++ )
-        {
-            if ( BasicVars[i] == oldBasic )
-            {
-                BasicVars[i] = newBasic.Value;
-            }
-        }
+        BasicVars[pivotRow - 1] = pivotCol.Value - 1;
         currentIteration++;
         // return
         return false;
     }
 
-    private static Matrix<double> ScaleRow( Matrix<double> mat, int row, double scale )
+    private static void ScaleRow( Matrix<double> mat, int row, double scale )
     {
         mat.SetRow( row, mat.Row( row ) * scale );
-        return mat;
     }
 
-    private static Matrix<double> RowCombine( Matrix<double> mat, int row1, int row2, double factor )
+    private static void RowCombine( Matrix<double> mat, int row1, int row2, double factor )
     {
         mat.SetRow( row1, mat.Row( row1 ) + mat.Row( row2 ) * factor );
-        return mat;
     }
 
-    private static Matrix<double> Pivot( Matrix<double> mat, int row, int col )
+    private static void Pivot( Matrix<double> mat, int row, int col )
     {
         if ( double.Abs( mat[row, col] ) < 1E-8 ) throw new Exception( "Cannot pivot around 0" );
-        mat = ScaleRow( mat, row, 1.0 / mat[row, col] );
+        ScaleRow( mat, row, 1.0 / mat[row, col] );
         // Combine every other row
         for ( int i = 0; i < mat.RowCount; i++ )
         {
             if ( i != row )
             {
-                mat = RowCombine( mat, i, row, -mat[i, col] );
+                RowCombine( mat, i, row, -mat[i, col] );
             }
         }
-        return mat;
     }
 }

@@ -1,10 +1,7 @@
-
 using Sprache;
 using AoC.Utils;
 using MathNet.Numerics.LinearAlgebra;
 using LpSolveDotNet;
-using System.ComponentModel;
-using MathNet.Numerics;
 
 namespace AoC.Y2025;
 
@@ -96,58 +93,29 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
 
     public long ReachDesiredJoltage()
     {
-        Console.WriteLine( $"Solving for {this}" );
+        // Console.WriteLine( $"Solving for {this}" );
         // Assemble Simplex program
         var b = JRequirements.ToVector();
         var A = Matrix<double>.Build.DenseOfColumnVectors(
             Buttons.Select( but => but.ToCoefficientVector( b.Count ) ).ToArray()
         );
         var c = Vector<double>.Build.Dense( A.ColumnCount, 1.0 );
+        var simplex = SimplexProblem.FromCoeffs( A, b, c );
+        // Console.WriteLine( simplex.Tableu );
+        simplex.Initialize();
+        // Console.WriteLine( simplex.Tableu );
 
-        var lp = LpSolve.make_lp( b.Count, A.ColumnCount );
-        lp.set_minim();
-        const double Ignored = 0;
-        double[] cArr = new double[c.Count + 1];
-        cArr[0] = Ignored;
-        Array.Copy( c.ToArray(), 0, cArr, 1, c.Count );
-        lp.set_obj_fn( cArr );
-        lp.set_add_rowmode( true );
-        for ( int i = 0; i < A.RowCount; i++ )
+        var count = 0;
+        while ( !simplex.Iterate() )
         {
-            double[] aRow = new double[A.ColumnCount + 1];
-            aRow[0] = Ignored;
-            Array.Copy( A.Row( i ).ToArray(), 0, aRow, 1, A.ColumnCount );
-            lp.add_constraint( aRow, lpsolve_constr_types.EQ, b[i] );
+            // Console.WriteLine( simplex.Tableu );
+            //Console.WriteLine( $"BasicVars: {string.Join( ',', simplex.BasicVars )}" );
+            count++;
         }
-        lp.set_add_rowmode( false );
-        for ( var i = 0; i < A.ColumnCount; i++ )
-        {
-            lp.set_int( i, true );
-        }
-        lp.set_verbose( lpsolve_verbosity.IMPORTANT );
-        var result = lp.solve();
-        if ( result == lpsolve_return.OPTIMAL )
-        {
-            Console.WriteLine( $"Objective value: {lp.get_objective()}" );
-            var rounded = ( long ) lp.get_objective().Round( 0 );
-            Console.WriteLine( rounded );
-            return rounded;
-        }
-        else
-        {
-            throw new Exception( "COULDN'T OPTIMIZE" );
-        }
-        //var simplex = SimplexProblem.FromCoeffs( A, b, c );
-
-        //var count = 0;
-        //while ( !simplex.Iterate() )
-        //{
-        //    Console.WriteLine( simplex.Tableu );
-        //    Console.WriteLine( $"BasicVars: {string.Join(',', simplex.BasicVars )}" );
-        //    count++;
-        //}
-        //Console.WriteLine( $"Solved in {count} iterations" );
-        //Console.WriteLine( $"Solution is {simplex.CurrentSolution}" );
+        // Console.WriteLine( $"Solved in {count} iterations" );
+        // Console.WriteLine( $"Solution is {simplex.CurrentSolution}" );
+        Console.WriteLine( $"Objective: {simplex.CurrentObjective}" );
+        return simplex.CurrentObjective;
     }
 }
 
