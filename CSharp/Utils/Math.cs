@@ -80,4 +80,9 @@ public static class Math
         }
         return ( int ) (double.CreateChecked( num ) / System.Math.Pow( 10, numDigs - pos - 1 )) % 10;
     }
+
+    public static bool IsInteger( this double num )
+    {
+        return double.Abs( num - double.Floor( num ) ) < 1E-8;
+    }
 }

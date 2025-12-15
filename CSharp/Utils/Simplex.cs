@@ -1,3 +1,5 @@
+using System.Net;
+using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace AoC.Utils;
@@ -5,14 +7,21 @@ namespace AoC.Utils;
 public record SimplexProblem
 {
     public required Matrix<double> Tableu { get; set; }
+    /// <summary>
+    /// BasicVars is a collection of the column indices for the current BFS (Basic feasible solution)
+    /// Their corresponding coefficients are found, I think, in the last column.
+    /// We start with the BFS that we only use the newly introduced variables,
+    /// which can be found in indices m, m+1,...,m+n
+    /// </summary>
     public required int[] BasicVars { get; set; }
-    public required int NumUnknowns { get; init; }
-    public required int NumConstraints { get; init; }
-    public int numIterations = 10;
+    public required int NumUnknowns { get; set; }
+    public required int NumConstraints { get; set; }
+    public int numIterations = 100;
     private int currentIteration = 0;
     private static double M = 1000;
+    private bool addedIntegerConstraints = false;
 
-    public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1];
+    public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1].Round( 0 );
 
     public Vector<double> CurrentSolution
     {
@@ -33,36 +42,82 @@ public record SimplexProblem
         if ( b.Count != n ) throw new ArgumentException( "Mismatch in number of constraints." );
         if ( c.Count != m ) throw new ArgumentException( "Mismatch in problem domain" );
 
-        var tab = Matrix<double>.Build.Dense( 1 + n, m + n + 2, 0.0 );
+        var tab = Matrix<double>.Build.Dense( 1, 2 + c.Count, 0.0 );
         // Set up tableau matrix
         tab[0, 0] = 1.0;
         tab.SetSubMatrix( 0, 1, c.ToRowMatrix() );
-        tab.SetSubMatrix( 1, 1, A );
-        tab.SetSubMatrix( 1, m + 1, Matrix<double>.Build.DenseIdentity( n ) );
-        tab.SetSubMatrix( 1, m + n + 1, b.ToColumnMatrix() );
+
+        //tab.SetSubMatrix( 1, m + n + 1, b.ToColumnMatrix() );
         // Set up M-constraints:
-        tab.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+        // tab.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
         // The current value for the objective functional will be updated after the Initialize call.
         //tab[0, tab.ColumnCount - 1] = M * b.Sum();
 
-        return new SimplexProblem {
+        var simplex = new SimplexProblem {
             Tableu = tab,
-            // BasicVars is a collection of the column indices for the current BFS (Basic feasible solution)
-            // Their corresponding coefficients are found, I think, in the last column.
-            // We start with the BFS that we only use the newly introduced variables,
-            // which can be found in indices m, m+1,...,m+n
-            BasicVars = Enumerable.Range( m, n ).ToArray(),
+
+            BasicVars = [],
             NumUnknowns = m,
-            NumConstraints = n
+            NumConstraints = 0
         };
+        simplex.AddEqualityConstraints( A, b );
+        return simplex;
+    }
+
+    public void AddEqualityConstraints( Matrix<double> A, Vector<double> b )
+    {
+        // Initial assertions
+        var oldN = Tableu.RowCount;
+        var n = A.RowCount;
+        var m = A.ColumnCount;
+
+        if ( b.Count != n )
+        {
+            throw new ArgumentException( $"Mismatch in number of constraints and values: {n} != {b.Count}" );
+        }
+
+        if ( m != NumConstraints + NumUnknowns )
+        {
+            throw new ArgumentException( "The given equality constraint doesn't match the problem:" +
+                $" {m}(A.ColumnCount) != {NumConstraints + NumUnknowns}(number of unknowns and constraints thus far)" );
+        }
+        // Initialize new matrix
+        var newTab = Matrix<double>.Build.Dense( Tableu.RowCount + n, m + n + 2, 0.0 );
+        // The first block is the same as before
+        var oldB = Tableu.SubMatrix( 0, Tableu.RowCount, Tableu.ColumnCount - 1, 1 );
+        var oldTab = Tableu.SubMatrix( 0, Tableu.RowCount, 0, Tableu.ColumnCount - 1 );
+        newTab.SetSubMatrix( 0, 0, oldTab );
+        newTab.SetSubMatrix( 0, n + m + 1, oldB );
+        newTab.SetSubMatrix( Tableu.RowCount, n + m + 1, b.ToColumnMatrix() );
+        // add in the new constraints:
+        newTab.SetSubMatrix( 1 + NumConstraints, 1, A );
+        // add in identity for the new constraint variables
+        newTab.SetSubMatrix( 1 + NumConstraints, m + 1, Matrix<double>.Build.DenseIdentity( n ) );
+
+        // Set up M-values for the new constraints:
+        newTab.SetSubMatrix( 0, Tableu.ColumnCount - 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+        //newTab[0, newTab.ColumnCount - 1] += M * b.Sum();
+
+
+        Tableu = newTab;
+        // Update other state variables;
+        NumConstraints += n;
+        // Update basic variables by extending with the newly introduced constraint variables
+        var newBasics = new int[BasicVars.Length + n];
+        Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
+        BasicVars = newBasics;
+        // Finally we pivot on the new constraints
+        // Console.WriteLine( Tableu );
+        Initialize( Enumerable.Range( oldN, n ), NumUnknowns );
     }
 
     // Run through inverse iteration n times to get initial tableau
-    public void Initialize()
+    public void Initialize( IEnumerable<int> variables, int offset )
     {
-        for ( int i = 0; i < NumConstraints; i++ )
+        foreach ( var i in variables )
         {
-            Pivot( Tableu, i + 1, NumUnknowns + i + 1 );
+            // Console.WriteLine( $"Pivoting around: {i}, {offset + i}" );
+            Pivot( Tableu, i, offset + i );
         }
     }
 
@@ -84,7 +139,6 @@ public record SimplexProblem
                 idx = i;
             }
         }
-        // Console.WriteLine( $"Pivot column is {idx}" );
         return idx + 1;
     }
 
@@ -138,6 +192,25 @@ public record SimplexProblem
         var pivotCol = GetPivotColumn();
         if ( pivotCol is null || currentIteration >= numIterations )
         {
+            // At this point, we've optimized the relaxed problem.
+            // I.e., we've found an optimum without necessarily all variables being integer
+            // So, let's find all basic variables that are non-integer:
+            var nonIntegersIndices = Tableu.SubMatrix( 1, NumConstraints, Tableu.ColumnCount - 1, 1 )
+                .ToRowMajorArray()
+                .Select( ( v, i ) => (v, i) )
+                .Where( p => !p.v.IsInteger() )
+                .Select( p => p.i )
+                .ToList();
+            if ( nonIntegersIndices.Count > 0 && !addedIntegerConstraints )
+            {
+                // Console.WriteLine( $"Finished iterations. The following row indices are not integer {string.Join( ',', nonIntegersIndices )}" );
+                var (A, b) = CreateIntegerConstraintsFor( nonIntegersIndices );
+                // Console.WriteLine( $"New constraints are: {A} = {b}" );
+                // AddEqualityConstraints( A, b );
+                // Console.WriteLine( $"{Tableu}" );
+                addedIntegerConstraints = true;
+                return true;
+            }
             // We're done
             return true;
         }
@@ -151,6 +224,16 @@ public record SimplexProblem
         currentIteration++;
         // return
         return false;
+    }
+
+    private (Matrix<double> A, Vector<double> b) CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
+    {
+        var mat = Matrix<double>.Build.DenseOfRowVectors(
+            rowIndices.Select( ri => Tableu.Row( ri + 1 ).Map( v => -double.Floor( v ) + v ) )
+        );
+        var A = mat.SubMatrix( 0, mat.RowCount, 1, mat.ColumnCount - 2 );
+        var b = mat.Column( mat.ColumnCount - 1 );
+        return (A, b);
     }
 
     private static void ScaleRow( Matrix<double> mat, int row, double scale )
