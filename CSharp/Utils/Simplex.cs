@@ -8,9 +8,9 @@ public record SimplexProblem
     public required int[] BasicVars { get; set; }
     public required int NumUnknowns { get; init; }
     public required int NumConstraints { get; init; }
-    public int numIterations = 100;
+    public int numIterations = 10;
     private int currentIteration = 0;
-    private static double M = 10000;
+    private static double M = 1000;
 
     public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1];
 
@@ -90,6 +90,13 @@ public record SimplexProblem
 
     private static bool SameSign( double a, double b )
     {
+        // Some edge cases we want to short circuit
+        // To be cleaned up
+        if ( (double.Abs( a ) < 1E-8 && b < 1E-8) ||
+            (double.Abs( b ) < 1E-8 && a < 1E-8) )
+        {
+            return false;
+        }
         // This evaluationg doesn't work when a or b is close to 0.
         //return double.Sign( a ) != double.Sign( b );
         var d1 = double.Abs( b - a );
@@ -129,7 +136,7 @@ public record SimplexProblem
     public bool Iterate()
     {
         var pivotCol = GetPivotColumn();
-        if ( pivotCol is null )
+        if ( pivotCol is null || currentIteration >= numIterations )
         {
             // We're done
             return true;

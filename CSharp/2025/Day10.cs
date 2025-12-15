@@ -24,7 +24,11 @@ public sealed class Day10 : IPuzzle
         LpSolve.Init();
 
         var data = Data;
-        var result = data.Sum( m => m.ReachDesiredJoltage() );
+        var result = data.Skip( 22 ).Take( 1 ).Select( ( m, i ) => {
+            var result = m.ReachDesiredJoltage();
+            Console.WriteLine( $"{i}: {result}" );
+            return result;
+        } ).Sum();
         Console.WriteLine( result );
 
     }
@@ -114,7 +118,7 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
         }
         // Console.WriteLine( $"Solved in {count} iterations" );
         // Console.WriteLine( $"Solution is {simplex.CurrentSolution}" );
-        Console.WriteLine( $"Objective: {simplex.CurrentObjective}" );
+        // Console.WriteLine( $"Objective: {simplex.CurrentObjective}" );
         return simplex.CurrentObjective;
     }
 }
