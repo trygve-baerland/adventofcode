@@ -25,7 +25,7 @@ public sealed class Day10 : IPuzzle
         LpSolve.Init();
 
         var data = Data;
-        var result = data.Select( ( m, i ) => {
+        var result = data.Skip( 10 ).Take( 1 ).Select( ( m, i ) => {
             var result = m.ReachDesiredJoltage();
             var oldRes = m.OldSolve();
             return (i, result, oldRes);
@@ -109,7 +109,7 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
         );
         var c = Vector<double>.Build.Dense( A.ColumnCount, 1.0 );
         var simplex = SimplexProblem.FromCoeffs( A, b, c );
-        // Console.WriteLine( simplex.Tableu );
+        Console.WriteLine( simplex.Tableu );
 
         var count = 0;
         while ( !simplex.Iterate() )
@@ -118,8 +118,10 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
             // Console.WriteLine( $"BasicVars: {string.Join( ',', simplex.BasicVars )}" );
             count++;
         }
+        Console.WriteLine( simplex.Tableu );
         // Console.WriteLine( $"Solved in {count} iterations" );
-        // Console.WriteLine( $"Solution is {simplex.CurrentSolution}" );
+        Console.WriteLine( $"Solution is {simplex.CurrentSolution}" );
+        Console.WriteLine( $"A*x = {A.Multiply( simplex.CurrentSolution )}" );
         // Console.WriteLine( $"Objective: {simplex.CurrentObjective}" );
         return simplex.CurrentObjective;
     }

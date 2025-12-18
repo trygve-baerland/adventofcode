@@ -64,10 +64,9 @@ public record SimplexProblem
         return simplex;
     }
 
-    public void AddEqualityConstraints( Matrix<double> A, Vector<double> b )
+    public void AddInequalityConstraints( Matrix<double> A, Vector<double> b )
     {
         // Initial assertions
-        var oldN = Tableu.RowCount;
         var n = A.RowCount;
         var m = A.ColumnCount;
 
@@ -82,7 +81,7 @@ public record SimplexProblem
                 $" {m}(A.ColumnCount) != {NumConstraints + NumUnknowns}(number of unknowns and constraints thus far)" );
         }
         // Initialize new matrix
-        var newTab = Matrix<double>.Build.Dense( Tableu.RowCount + n, m + n + 2, 0.0 );
+        var newTab = Matrix<double>.Build.Dense( Tableu.RowCount + n, Tableu.ColumnCount + n, 0.0 );
         // The first block is the same as before
         var oldB = Tableu.SubMatrix( 0, Tableu.RowCount, Tableu.ColumnCount - 1, 1 );
         var oldTab = Tableu.SubMatrix( 0, Tableu.RowCount, 0, Tableu.ColumnCount - 1 );
@@ -94,11 +93,6 @@ public record SimplexProblem
         // add in identity for the new constraint variables
         newTab.SetSubMatrix( 1 + NumConstraints, m + 1, Matrix<double>.Build.DenseIdentity( n ) );
 
-        // Set up M-values for the new constraints:
-        newTab.SetSubMatrix( 0, Tableu.ColumnCount - 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
-        //newTab[0, newTab.ColumnCount - 1] += M * b.Sum();
-
-
         Tableu = newTab;
         // Update other state variables;
         NumConstraints += n;
@@ -106,14 +100,28 @@ public record SimplexProblem
         var newBasics = new int[BasicVars.Length + n];
         Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
         BasicVars = newBasics;
+
+    }
+
+    public void AddEqualityConstraints( Matrix<double> A, Vector<double> b )
+    {
+        AddInequalityConstraints( A, b );
+        var n = A.RowCount;
+        var m = A.ColumnCount;
+        // Set up M-values for the new constraints:
+        Tableu.SetSubMatrix( 0, Tableu.ColumnCount - (m - 1), Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+        // Tableu[0, Tableu.ColumnCount - 1] += M * b.Sum();
+
         // Finally we pivot on the new constraints
-        // Console.WriteLine( Tableu );
+        var oldN = Tableu.RowCount - n;
         Initialize( Enumerable.Range( oldN, n ), NumUnknowns );
+
     }
 
     // Run through inverse iteration n times to get initial tableau
     public void Initialize( IEnumerable<int> variables, int offset )
     {
+        //Console.WriteLine( Tableu );
         foreach ( var i in variables )
         {
             // Console.WriteLine( $"Pivoting around: {i}, {offset + i}" );
@@ -198,18 +206,20 @@ public record SimplexProblem
             var nonIntegersIndices = Tableu.SubMatrix( 1, NumConstraints, Tableu.ColumnCount - 1, 1 )
                 .ToRowMajorArray()
                 .Select( ( v, i ) => (v, i) )
-                .Where( p => !p.v.IsInteger() )
+                .Where( p => !p.v.IsInteger() && BasicVars[p.i] < NumUnknowns )
                 .Select( p => p.i )
                 .ToList();
             if ( nonIntegersIndices.Count > 0 && !addedIntegerConstraints )
             {
-                // Console.WriteLine( $"Finished iterations. The following row indices are not integer {string.Join( ',', nonIntegersIndices )}" );
+                Console.WriteLine( $"Finished iterations. The following row indices are not integer {string.Join( ',', nonIntegersIndices )}" );
                 var (A, b) = CreateIntegerConstraintsFor( nonIntegersIndices );
                 // Console.WriteLine( $"New constraints are: {A} = {b}" );
-                // AddEqualityConstraints( A, b );
-                // Console.WriteLine( $"{Tableu}" );
+                Console.WriteLine( Tableu );
+                //AddInequalityConstraints( A, Vector<double>.Build.Dense( b.Count, 0.0 ) );
+                //AddInequalityConstraints( A, b );
+                Console.WriteLine( $"{Tableu}" );
                 addedIntegerConstraints = true;
-                return true;
+                return false;
             }
             // We're done
             return true;
@@ -229,7 +239,7 @@ public record SimplexProblem
     private (Matrix<double> A, Vector<double> b) CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
     {
         var mat = Matrix<double>.Build.DenseOfRowVectors(
-            rowIndices.Select( ri => Tableu.Row( ri + 1 ).Map( v => -double.Floor( v ) + v ) )
+            rowIndices.Select( ri => Tableu.Row( ri + 1 ).Map( v => double.Floor( v ) - v ) )
         );
         var A = mat.SubMatrix( 0, mat.RowCount, 1, mat.ColumnCount - 2 );
         var b = mat.Column( mat.ColumnCount - 1 );
