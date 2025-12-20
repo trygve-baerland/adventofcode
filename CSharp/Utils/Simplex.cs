@@ -97,7 +97,8 @@ public record SimplexProblem
         // Update other state variables;
         NumConstraints += n;
         // Update basic variables by extending with the newly introduced constraint variables
-        var newBasics = new int[BasicVars.Length + n];
+        var newBasics = Enumerable.Range( NumUnknowns, BasicVars.Length + n ).ToArray();
+        //var newBasics = new int[BasicVars.Length + n];
         Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
         BasicVars = newBasics;
 
@@ -216,10 +217,10 @@ public record SimplexProblem
                 // Console.WriteLine( $"New constraints are: {A} = {b}" );
                 Console.WriteLine( Tableu );
                 //AddInequalityConstraints( A, Vector<double>.Build.Dense( b.Count, 0.0 ) );
-                //AddInequalityConstraints( A, b );
+                AddInequalityConstraints( A, b );
                 Console.WriteLine( $"{Tableu}" );
                 addedIntegerConstraints = true;
-                return false;
+                return true;
             }
             // We're done
             return true;
@@ -232,7 +233,7 @@ public record SimplexProblem
         // Update basic vars:
         BasicVars[pivotRow - 1] = pivotCol.Value - 1;
         currentIteration++;
-        // return
+        // return (well, duh)
         return false;
     }
 
