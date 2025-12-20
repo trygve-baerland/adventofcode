@@ -1,4 +1,3 @@
-using System.Net;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 
@@ -19,7 +18,7 @@ public record SimplexProblem
     public int numIterations = 100;
     private int currentIteration = 0;
     private static double M = 1000;
-    private bool addedIntegerConstraints = false;
+    private bool onPrimal = true;
 
     public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1].Round( 0 );
 
@@ -110,7 +109,7 @@ public record SimplexProblem
         var n = A.RowCount;
         var m = A.ColumnCount;
         // Set up M-values for the new constraints:
-        Tableu.SetSubMatrix( 0, Tableu.ColumnCount - (m - 1), Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+        Tableu.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
         // Tableu[0, Tableu.ColumnCount - 1] += M * b.Sum();
 
         // Finally we pivot on the new constraints
@@ -122,10 +121,8 @@ public record SimplexProblem
     // Run through inverse iteration n times to get initial tableau
     public void Initialize( IEnumerable<int> variables, int offset )
     {
-        //Console.WriteLine( Tableu );
         foreach ( var i in variables )
         {
-            // Console.WriteLine( $"Pivoting around: {i}, {offset + i}" );
             Pivot( Tableu, i, offset + i );
         }
     }
@@ -133,6 +130,27 @@ public record SimplexProblem
     private int? GetPivotColumn()
     {
         var objDiff = Tableu.SubMatrix( 0, 1, 1, NumUnknowns + NumConstraints ).ToRowMajorArray();
+        if ( objDiff.All( f => f > -1E-8 ) )
+        {
+            return null;
+        }
+        // Get index of min
+        var idx = 0;
+        var target = double.MaxValue;
+        for ( var i = 0; i < objDiff.Length; i++ )
+        {
+            if ( objDiff[i] < target )
+            {
+                target = objDiff[i];
+                idx = i;
+            }
+        }
+        return idx + 1;
+    }
+
+    private int? GetDualPivotRow()
+    {
+        var objDiff = Tableu.SubMatrix( 1, NumConstraints, NumConstraints + NumUnknowns + 1, 1 ).ToRowMajorArray();
         if ( objDiff.All( f => f > -1E-8 ) )
         {
             return null;
@@ -196,42 +214,86 @@ public record SimplexProblem
         return jdx;
     }
 
+    private int GetDualPivotCol( int row )
+    {
+        var jdx = 0;
+        var target = double.MaxValue;
+        for ( var i = 1; i < Tableu.ColumnCount; i++ )
+        {
+            double cand;
+            //if ( double.Abs( Tableu[row, i] ) < 1E-8 ||
+            //    SameSign( Tableu[row, i], Tableu[0, i] ) )
+            if ( Tableu[row, i] > -1E-8 )
+            {
+                cand = double.MaxValue;
+            }
+            else
+            {
+                cand = Tableu[0, i] / Tableu[row, i];
+            }
+            if ( cand < target )
+            {
+                jdx = i;
+                target = cand;
+            }
+        }
+        return jdx;
+    }
+
+    private (int row, int col)? getPivotIndices()
+    {
+        if ( onPrimal )
+        {
+            var col = GetPivotColumn();
+            if ( col is null ) return null;
+            var row = GetPivotRow( col.Value );
+            return (row, col.Value);
+        }
+        var dRow = GetDualPivotRow();
+        if ( dRow is null ) return null;
+        var dCol = GetDualPivotCol( dRow.Value );
+        return (dRow.Value, dCol);
+    }
+
     public bool Iterate()
     {
-        var pivotCol = GetPivotColumn();
-        if ( pivotCol is null || currentIteration >= numIterations )
+        var pivot = getPivotIndices();
+        if ( pivot is null || currentIteration >= numIterations )
         {
-            // At this point, we've optimized the relaxed problem.
-            // I.e., we've found an optimum without necessarily all variables being integer
-            // So, let's find all basic variables that are non-integer:
-            var nonIntegersIndices = Tableu.SubMatrix( 1, NumConstraints, Tableu.ColumnCount - 1, 1 )
-                .ToRowMajorArray()
-                .Select( ( v, i ) => (v, i) )
-                .Where( p => !p.v.IsInteger() && BasicVars[p.i] < NumUnknowns )
-                .Select( p => p.i )
-                .ToList();
-            if ( nonIntegersIndices.Count > 0 && !addedIntegerConstraints )
+            if ( onPrimal )
             {
-                Console.WriteLine( $"Finished iterations. The following row indices are not integer {string.Join( ',', nonIntegersIndices )}" );
-                var (A, b) = CreateIntegerConstraintsFor( nonIntegersIndices );
-                // Console.WriteLine( $"New constraints are: {A} = {b}" );
-                Console.WriteLine( Tableu );
-                //AddInequalityConstraints( A, Vector<double>.Build.Dense( b.Count, 0.0 ) );
-                AddInequalityConstraints( A, b );
-                Console.WriteLine( $"{Tableu}" );
-                addedIntegerConstraints = true;
+                // At this point, we've optimized the relaxed problem.
+                // I.e., we've found an optimum without necessarily all variables being integer
+                // So, let's find all basic variables that are non-integer:
+                var nonIntegersIndices = Tableu.SubMatrix( 1, NumConstraints, Tableu.ColumnCount - 1, 1 )
+                    .ToRowMajorArray()
+                    .Select( ( v, i ) => (v, i) )
+                    .Where( p => !p.v.IsInteger() && BasicVars[p.i] < NumUnknowns )
+                    .Select( p => p.i )
+                    .ToList();
+                if ( nonIntegersIndices.Count > 0 )
+                {
+                    var (A, b) = CreateIntegerConstraintsFor( nonIntegersIndices );
+                    AddInequalityConstraints( A, b );
+                    onPrimal = false;
+                    return false;
+                }
+                // We're done
                 return true;
             }
-            // We're done
-            return true;
+            else
+            {
+                // Switch back to primal solve:
+                onPrimal = true;
+                return false;
+            }
+
         }
         // Do iteration
-        var pivotRow = GetPivotRow( pivotCol.Value );
-        // Console.WriteLine( $"Pivoting about ({pivotRow}, {pivotCol.Value})" );
-        Pivot( Tableu, pivotRow, pivotCol.Value );
+        Pivot( Tableu, pivot.Value.row, pivot.Value.col );
 
         // Update basic vars:
-        BasicVars[pivotRow - 1] = pivotCol.Value - 1;
+        BasicVars[pivot.Value.row - 1] = pivot.Value.col - 1;
         currentIteration++;
         // return (well, duh)
         return false;

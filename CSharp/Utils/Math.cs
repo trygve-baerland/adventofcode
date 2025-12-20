@@ -83,6 +83,6 @@ public static class Math
 
     public static bool IsInteger( this double num )
     {
-        return double.Abs( num - double.Floor( num ) ) < 1E-8;
+        return double.Abs( num - double.Floor( num ) ) < 1E-8 || double.Abs( double.Ceiling( num ) - num ) < 1E-8;
     }
 }
