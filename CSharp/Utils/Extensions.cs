@@ -227,4 +227,26 @@ public static class Extensions
         };
 
     public static IEnumerable<T> IgnoreAt<T>( this IEnumerable<T> items, int k ) => items.Where( ( item, index ) => index != k );
+
+    public static int? MinIndex<T>( this IEnumerable<T> items, Func<T, bool> given )
+    where T : struct, IComparable<T>
+    {
+        var it = items.GetEnumerator();
+        T? target = null;
+        var idx = -1;
+        var i = -1;
+        while ( it.MoveNext() )
+        {
+            i++;
+            var cand = it.Current;
+            if ( !given( cand ) ) continue;
+            if ( (target is null) || cand.CompareTo( target.Value ) < 0 )
+            {
+                idx = i;
+                target = cand;
+            }
+        }
+        // Check if we at least found one element:
+        return target is not null ? idx : null;
+    }
 }

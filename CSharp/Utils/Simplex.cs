@@ -15,12 +15,15 @@ public record SimplexProblem
     public required int[] BasicVars { get; set; }
     public required int NumUnknowns { get; set; }
     public required int NumConstraints { get; set; }
-    public int numIterations = 100;
-    private int currentIteration = 0;
     private static double M = 1000;
     private bool onPrimal = true;
 
     public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1].Round( 0 );
+    public double[] CurrentObjectiveFunctional =>
+        Tableu.SubMatrix( 0, 1, 1, NumUnknowns + NumConstraints ).ToRowMajorArray();
+    public double[] CurrentSolutionCoefficients =>
+        Tableu.SubMatrix( 1, NumConstraints, NumConstraints + NumUnknowns + 1, 1 ).ToRowMajorArray();
+
 
     public Vector<double> CurrentSolution
     {
@@ -129,65 +132,13 @@ public record SimplexProblem
 
     private int? GetPivotColumn()
     {
-        var objDiff = Tableu.SubMatrix( 0, 1, 1, NumUnknowns + NumConstraints ).ToRowMajorArray();
-        if ( objDiff.All( f => f > -1E-8 ) )
-        {
-            return null;
-        }
-        // Get index of min
-        var idx = 0;
-        var target = double.MaxValue;
-        for ( var i = 0; i < objDiff.Length; i++ )
-        {
-            if ( objDiff[i] < target )
-            {
-                target = objDiff[i];
-                idx = i;
-            }
-        }
-        return idx + 1;
+        return CurrentObjectiveFunctional.MinIndex( f => f < -1E-8 ) + 1;
     }
 
     private int? GetDualPivotRow()
     {
-        var objDiff = Tableu.SubMatrix( 1, NumConstraints, NumConstraints + NumUnknowns + 1, 1 ).ToRowMajorArray();
-        if ( objDiff.All( f => f > -1E-8 ) )
-        {
-            return null;
-        }
-        // Get index of min
-        var idx = 0;
-        var target = double.MaxValue;
-        for ( var i = 0; i < objDiff.Length; i++ )
-        {
-            if ( objDiff[i] < target )
-            {
-                target = objDiff[i];
-                idx = i;
-            }
-        }
-        return idx + 1;
+        return CurrentSolutionCoefficients.MinIndex( f => f < -1E-8 ) + 1;
     }
-
-    private static bool SameSign( double a, double b )
-    {
-        // Some edge cases we want to short circuit
-        // To be cleaned up
-        if ( (double.Abs( a ) < 1E-8 && b < 1E-8) ||
-            (double.Abs( b ) < 1E-8 && a < 1E-8) )
-        {
-            return false;
-        }
-        // This evaluationg doesn't work when a or b is close to 0.
-        //return double.Sign( a ) != double.Sign( b );
-        var d1 = double.Abs( b - a );
-        var d2 = double.Abs( double.Abs( b ) - double.Abs( a ) );
-        // Only of the same sign if these two differences are the same.
-        // If not, d1 > d2
-        return d1 <= d2 + 1E-8;
-
-    }
-
     private int GetPivotRow( int col )
     {
         var last = Tableu.ColumnCount - 1;
@@ -196,8 +147,7 @@ public record SimplexProblem
         for ( var i = 1; i < Tableu.RowCount; i++ )
         {
             double cand;
-            if ( double.Abs( Tableu[i, col] ) < 1E-8 ||
-                !SameSign( Tableu[i, col], Tableu[i, last] ) )
+            if ( Tableu[i, col] < 1E-8 )
             {
                 cand = double.MaxValue;
             }
@@ -221,8 +171,6 @@ public record SimplexProblem
         for ( var i = 1; i < Tableu.ColumnCount; i++ )
         {
             double cand;
-            //if ( double.Abs( Tableu[row, i] ) < 1E-8 ||
-            //    SameSign( Tableu[row, i], Tableu[0, i] ) )
             if ( Tableu[row, i] > -1E-8 )
             {
                 cand = double.MaxValue;
@@ -258,7 +206,7 @@ public record SimplexProblem
     public bool Iterate()
     {
         var pivot = getPivotIndices();
-        if ( pivot is null || currentIteration >= numIterations )
+        if ( pivot is null )
         {
             if ( onPrimal )
             {
@@ -287,14 +235,12 @@ public record SimplexProblem
                 onPrimal = true;
                 return false;
             }
-
         }
         // Do iteration
         Pivot( Tableu, pivot.Value.row, pivot.Value.col );
 
         // Update basic vars:
         BasicVars[pivot.Value.row - 1] = pivot.Value.col - 1;
-        currentIteration++;
         // return (well, duh)
         return false;
     }
