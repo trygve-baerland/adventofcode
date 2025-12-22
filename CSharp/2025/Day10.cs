@@ -14,7 +14,7 @@ public sealed class Day10 : IPuzzle
 
     public void Part1()
     {
-        var data = TestData;
+        var data = Data;
         var result = data.Sum( m => m.ReachDesiredState() );
         Console.WriteLine( result );
     }
@@ -39,6 +39,9 @@ record struct IndicatorLights( List<bool> Lights )
         var newLights = Lights.Select( ( l, i ) => schematic.Buttons.Contains( i ) ? !l : l ).ToList();
         return new IndicatorLights( newLights );
     }
+
+    public LinearFunctional ToFunctional() =>
+        new LinearFunctional( Vector<double>.Build.DenseOfEnumerable( Lights.Select( l => l ? 1.0 : 0.0 ) ) );
 
     public bool DeepCompare( IndicatorLights? other )
     {
@@ -85,18 +88,32 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
             Buttons.Select( but => but.ToCoefficientVector( dimension ) ).ToArray()
         ) );
 
-    public long ReachDesiredState()
+    public double ReachDesiredState()
     {
-        var initial = IndicatorLights.AllOff( DesiredState.Lights.Count() );
-        var buttons = Buttons;
-        var target = DesiredState;
-        return ShortestPath.BFS(
-            initial,
-            state => state.DeepCompare( target ),
-            state => {
-                return ApplyTo( buttons, state );
-            }
-        );
+        // Assemble Simplex program
+        var b = DesiredState.ToFunctional();
+        var A = ButtonsOperator( b.Dimensions() );
+        var simplex = LP<Simplex>.Minimize( NumPresses() )
+            .Given( A == b )
+            .AllInteger();
+
+        var result = simplex.Solve();
+        var sol = simplex.CurrentSolution();
+        Console.WriteLine( $"Objective is {simplex.CurrentObjective()}" );
+        //Console.WriteLine( $"Solution is {sol}" );
+        //Console.WriteLine( $"{A.Coefficients * sol} vs. {b.Coefficients}" );
+        return result;
+
+        //var initial = IndicatorLights.AllOff( DesiredState.Lights.Count() );
+        //var buttons = Buttons;
+        //var target = DesiredState;
+        //return ShortestPath.BFS(
+        //    initial,
+        //    state => state.DeepCompare( target ),
+        //    state => {
+        //        return ApplyTo( buttons, state );
+        //    }
+        //);
     }
 
     public double ReachDesiredJoltage()

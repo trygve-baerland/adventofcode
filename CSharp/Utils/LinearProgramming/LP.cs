@@ -51,4 +51,7 @@ where T : ILinearProgram<T>
         while ( !problem.Iterate() ) { }
         return problem.CurrentObjective();
     }
+
+    public Vector<double> CurrentSolution() => problem.CurrentSolution();
+    public double CurrentObjective() => problem.CurrentObjective();
 }
