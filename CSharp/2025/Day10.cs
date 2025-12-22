@@ -1,5 +1,6 @@
 using Sprache;
 using AoC.Utils;
+using AoC.Utils.LinearProgramming;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace AoC.Y2025;
@@ -22,7 +23,7 @@ public sealed class Day10 : IPuzzle
     {
         var data = Data;
         var result = data.Sum( m => m.ReachDesiredJoltage() );
-        Console.WriteLine( result );
+        Console.WriteLine( ( long ) result );
     }
 }
 
@@ -73,6 +74,9 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
 
     public static IEnumerable<IndicatorLights> ApplyTo( List<ButtonSchematic> buttonSchematics, IndicatorLights lights ) => buttonSchematics.Select( b => lights.Apply( b ) );
 
+    public LinearFunctional NumPresses() =>
+        new LinearFunctional( Vector<double>.Build.Dense( Buttons.Count, 1.0 ) );
+
     public long ReachDesiredState()
     {
         var initial = IndicatorLights.AllOff( DesiredState.Lights.Count() );
@@ -87,23 +91,17 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
         );
     }
 
-    public long ReachDesiredJoltage()
+    public double ReachDesiredJoltage()
     {
-        // Console.WriteLine( $"Solving for {this}" );
         // Assemble Simplex program
         var b = JRequirements.ToVector();
         var A = Matrix<double>.Build.DenseOfColumnVectors(
             Buttons.Select( but => but.ToCoefficientVector( b.Count ) ).ToArray()
         );
-        var c = Vector<double>.Build.Dense( A.ColumnCount, 1.0 );
-        var simplex = SimplexProblem.FromCoeffs( A, b, c );
+        var simplex = LP<Simplex>.Minimize( NumPresses() )
+            .Given( new EqualityConstraint( A, b ) );
 
-        var count = 0;
-        while ( !simplex.Iterate() )
-        {
-            count++;
-        }
-        return simplex.CurrentObjective;
+        return simplex.Solve();
     }
 }
 

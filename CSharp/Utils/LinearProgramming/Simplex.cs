@@ -1,9 +1,9 @@
-using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
+using AoC.Utils;
 
-namespace AoC.Utils;
+namespace AoC.Utils.LinearProgramming;
 
-public record SimplexProblem
+public record Simplex : ILinearProgram<Simplex>
 {
     public required Matrix<double> Tableu { get; set; }
     /// <summary>
@@ -18,7 +18,7 @@ public record SimplexProblem
     private static double M = 1000;
     private bool onPrimal = true;
 
-    public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1].Round( 0 );
+    public double CurrentObjective() => -Tableu[0, Tableu.ColumnCount - 1];
 
     public IEnumerable<double> RowCoefficients( int row ) =>
         Tableu.Row( row ).Skip( 1 ).Take( NumUnknowns + NumConstraints );
@@ -42,27 +42,34 @@ public record SimplexProblem
         }
     }
 
-    public static SimplexProblem Minimize( Vector<double> c )
+    public static Simplex Minimize( LinearFunctional functional )
     {
+        var c = functional.Coefficients;
         var tab = Matrix<double>.Build.Dense( 1, 2 + c.Count, 0.0 );
         tab[0, 0] = 1.0;
         tab.SetSubMatrix( 0, 1, c.ToRowMatrix() );
-        return new SimplexProblem {
+        return new Simplex {
             Tableu = tab,
             BasicVars = [],
             NumUnknowns = c.Count,
             NumConstraints = 0
         };
     }
-    public static SimplexProblem FromCoeffs( Matrix<double> A, Vector<double> b, Vector<double> c )
+    public void AddConstraint( ILinearConstraint constraint )
     {
-        // initial assertions:
-        var simplex = Minimize( c );
-        simplex.AddEqualityConstraints( A, b );
-        return simplex;
+        switch ( constraint )
+        {
+            case LessThanConstraint lc:
+                addInequalityConstraints( lc.A, lc.B );
+                break;
+            case EqualityConstraint ec:
+                addEqualityConstraints( ec.A, ec.B );
+                break;
+            default:
+                throw new ArgumentException( $"Invalid constraint type: {constraint.GetType()}" );
+        }
     }
-
-    public void AddInequalityConstraints( Matrix<double> A, Vector<double> b )
+    private void addInequalityConstraints( Matrix<double> A, Vector<double> b )
     {
         // Initial assertions
         var n = A.RowCount;
@@ -102,9 +109,9 @@ public record SimplexProblem
 
     }
 
-    public void AddEqualityConstraints( Matrix<double> A, Vector<double> b )
+    private void addEqualityConstraints( Matrix<double> A, Vector<double> b )
     {
-        AddInequalityConstraints( A, b );
+        addInequalityConstraints( A, b );
         var n = A.RowCount;
         var m = A.ColumnCount;
         // Set up M-values for the new constraints:
@@ -114,7 +121,6 @@ public record SimplexProblem
         // Finally we pivot on the new constraints
         var oldN = Tableu.RowCount - n;
         Initialize( Enumerable.Range( oldN, n ), NumUnknowns );
-
     }
 
     // Run through inverse iteration n times to get initial tableau
@@ -122,7 +128,7 @@ public record SimplexProblem
     {
         foreach ( var i in variables )
         {
-            Pivot( Tableu, i, offset + i );
+            Tableu.Pivot( i, offset + i );
         }
     }
 
@@ -192,8 +198,8 @@ public record SimplexProblem
                     .ToList();
                 if ( nonIntegersIndices.Count > 0 )
                 {
-                    var (A, b) = CreateIntegerConstraintsFor( nonIntegersIndices );
-                    AddInequalityConstraints( A, b );
+                    var ec = CreateIntegerConstraintsFor( nonIntegersIndices );
+                    AddConstraint( ec );
                     onPrimal = false;
                     return false;
                 }
@@ -208,7 +214,7 @@ public record SimplexProblem
             }
         }
         // Do iteration
-        Pivot( Tableu, pivot.Value.row, pivot.Value.col );
+        Tableu.Pivot( pivot.Value.row, pivot.Value.col );
 
         // Update basic vars:
         BasicVars[pivot.Value.row - 1] = pivot.Value.col - 1;
@@ -216,37 +222,13 @@ public record SimplexProblem
         return false;
     }
 
-    private (Matrix<double> A, Vector<double> b) CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
+    private LessThanConstraint CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
     {
         var mat = Matrix<double>.Build.DenseOfRowVectors(
             rowIndices.Select( ri => Tableu.Row( ri + 1 ).Map( v => double.Floor( v ) - v ) )
         );
         var A = mat.SubMatrix( 0, mat.RowCount, 1, mat.ColumnCount - 2 );
         var b = mat.Column( mat.ColumnCount - 1 );
-        return (A, b);
-    }
-
-    private static void ScaleRow( Matrix<double> mat, int row, double scale )
-    {
-        mat.SetRow( row, mat.Row( row ) * scale );
-    }
-
-    private static void RowCombine( Matrix<double> mat, int row1, int row2, double factor )
-    {
-        mat.SetRow( row1, mat.Row( row1 ) + mat.Row( row2 ) * factor );
-    }
-
-    private static void Pivot( Matrix<double> mat, int row, int col )
-    {
-        if ( double.Abs( mat[row, col] ) < 1E-8 ) throw new Exception( "Cannot pivot around 0" );
-        ScaleRow( mat, row, 1.0 / mat[row, col] );
-        // Combine every other row
-        for ( int i = 0; i < mat.RowCount; i++ )
-        {
-            if ( i != row )
-            {
-                RowCombine( mat, i, row, -mat[i, col] );
-            }
-        }
+        return new LessThanConstraint( A, b );
     }
 }
