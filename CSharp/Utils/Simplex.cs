@@ -1,4 +1,3 @@
-using System.Security.Principal;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 
@@ -42,32 +41,23 @@ public record SimplexProblem
             return result.SubVector( 0, NumUnknowns );
         }
     }
+
+    public static SimplexProblem Minimize( Vector<double> c )
+    {
+        var tab = Matrix<double>.Build.Dense( 1, 2 + c.Count, 0.0 );
+        tab[0, 0] = 1.0;
+        tab.SetSubMatrix( 0, 1, c.ToRowMatrix() );
+        return new SimplexProblem {
+            Tableu = tab,
+            BasicVars = [],
+            NumUnknowns = c.Count,
+            NumConstraints = 0
+        };
+    }
     public static SimplexProblem FromCoeffs( Matrix<double> A, Vector<double> b, Vector<double> c )
     {
         // initial assertions:
-        var n = A.RowCount;
-        var m = A.ColumnCount;
-        if ( b.Count != n ) throw new ArgumentException( "Mismatch in number of constraints." );
-        if ( c.Count != m ) throw new ArgumentException( "Mismatch in problem domain" );
-
-        var tab = Matrix<double>.Build.Dense( 1, 2 + c.Count, 0.0 );
-        // Set up tableau matrix
-        tab[0, 0] = 1.0;
-        tab.SetSubMatrix( 0, 1, c.ToRowMatrix() );
-
-        //tab.SetSubMatrix( 1, m + n + 1, b.ToColumnMatrix() );
-        // Set up M-constraints:
-        // tab.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
-        // The current value for the objective functional will be updated after the Initialize call.
-        //tab[0, tab.ColumnCount - 1] = M * b.Sum();
-
-        var simplex = new SimplexProblem {
-            Tableu = tab,
-
-            BasicVars = [],
-            NumUnknowns = m,
-            NumConstraints = 0
-        };
+        var simplex = Minimize( c );
         simplex.AddEqualityConstraints( A, b );
         return simplex;
     }
