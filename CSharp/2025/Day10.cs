@@ -105,7 +105,8 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
         var b = JRequirements.ToFunctional();
         var A = ButtonsOperator( b.Dimensions() );
         var simplex = LP<Simplex>.Minimize( NumPresses() )
-            .Given( A == b );
+            .Given( A == b )
+            .AllInteger();
 
         return simplex.Solve();
     }

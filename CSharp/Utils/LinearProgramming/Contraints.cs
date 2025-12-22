@@ -60,3 +60,5 @@ public record EqualityConstraint( Matrix<double> A, Vector<double> B ) : ILinear
 public record LessThanConstraint( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
 public record GreaterThanConstrain( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
 
+public record struct IntegerConstraint( int index ) : ILinearConstraint;
+

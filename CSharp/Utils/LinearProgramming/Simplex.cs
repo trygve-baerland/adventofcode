@@ -15,6 +15,8 @@ public record Simplex : ILinearProgram<Simplex>
     public required int[] BasicVars { get; set; }
     public required int NumUnknowns { get; set; }
     public required int NumConstraints { get; set; }
+
+    private List<int> integerUnknowns = [];
     private static double M = 1000;
     private bool onPrimal = true;
 
@@ -30,16 +32,14 @@ public record Simplex : ILinearProgram<Simplex>
     public IEnumerable<double> CurrentSolutionCoefficients =>
         ColumnCoefficients( NumConstraints + NumUnknowns + 1 );
 
-    public Vector<double> CurrentSolution
+    public Vector<double> CurrentSolution()
     {
-        get {
-            var result = Vector<double>.Build.Dense( NumUnknowns + NumConstraints, 0.0 );
-            for ( int i = 0; i < BasicVars.Length; i++ )
-            {
-                result[BasicVars[i]] = Tableu[1 + i, Tableu.ColumnCount - 1];
-            }
-            return result.SubVector( 0, NumUnknowns );
+        var result = Vector<double>.Build.Dense( NumUnknowns + NumConstraints, 0.0 );
+        for ( int i = 0; i < BasicVars.Length; i++ )
+        {
+            result[BasicVars[i]] = Tableu[1 + i, Tableu.ColumnCount - 1];
         }
+        return result.SubVector( 0, NumUnknowns );
     }
 
     public static Simplex Minimize( LinearFunctional functional )
@@ -65,6 +65,11 @@ public record Simplex : ILinearProgram<Simplex>
             case EqualityConstraint ec:
                 addEqualityConstraints( ec.A, ec.B );
                 break;
+            case IntegerConstraint ic:
+                if ( ic.index < 0 || ic.index >= NumUnknowns )
+                    throw new ArgumentException( $"Invalid index for unknown. {ic.index}" );
+                integerUnknowns.Add( ic.index );
+                break;
             default:
                 throw new ArgumentException( $"Invalid constraint type: {constraint.GetType()}" );
         }
@@ -79,7 +84,6 @@ public record Simplex : ILinearProgram<Simplex>
         {
             throw new ArgumentException( $"Mismatch in number of constraints and values: {n} != {b.Count}" );
         }
-
         if ( m != NumConstraints + NumUnknowns )
         {
             throw new ArgumentException( "The given equality constraint doesn't match the problem:" +
@@ -107,6 +111,24 @@ public record Simplex : ILinearProgram<Simplex>
         Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
         BasicVars = newBasics;
 
+    }
+
+    private bool cutNonIntegerUnknowns()
+    {
+        if ( integerUnknowns.Count < 1 ) return false;
+        var nonIntegersIndices = integerUnknowns
+            .Select( index => BasicVars.Index()
+                .FirstOrDefault( item => item.Item == index, (Index: -1, Item: 0) ).Index
+            )
+            .Where( index => index >= 0 && !Tableu[1 + index, Tableu.ColumnCount - 1].IsInteger() )
+            .ToList();
+
+        if ( nonIntegersIndices.Count == 0 ) return false;
+
+        var ec = CreateIntegerConstraintsFor( nonIntegersIndices );
+        AddConstraint( ec );
+        onPrimal = false;
+        return true;
     }
 
     private void addEqualityConstraints( Matrix<double> A, Vector<double> b )
@@ -189,22 +211,8 @@ public record Simplex : ILinearProgram<Simplex>
             {
                 // At this point, we've optimized the relaxed problem.
                 // I.e., we've found an optimum without necessarily all variables being integer
-                // So, let's find all basic variables that are non-integer:
-                var nonIntegersIndices = Tableu.SubMatrix( 1, NumConstraints, Tableu.ColumnCount - 1, 1 )
-                    .ToRowMajorArray()
-                    .Select( ( v, i ) => (v, i) )
-                    .Where( p => !p.v.IsInteger() && BasicVars[p.i] < NumUnknowns )
-                    .Select( p => p.i )
-                    .ToList();
-                if ( nonIntegersIndices.Count > 0 )
-                {
-                    var ec = CreateIntegerConstraintsFor( nonIntegersIndices );
-                    AddConstraint( ec );
-                    onPrimal = false;
-                    return false;
-                }
-                // We're done
-                return true;
+                // So let's cut where we need
+                return !cutNonIntegerUnknowns();
             }
             else
             {

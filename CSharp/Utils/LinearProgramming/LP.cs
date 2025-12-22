@@ -1,13 +1,17 @@
 
+using MathNet.Numerics.LinearAlgebra;
+
 namespace AoC.Utils.LinearProgramming;
 
 public interface ILinearProgram<T>
 where T : ILinearProgram<T>
 {
+    int NumUnknowns { get; }
+    int NumConstraints { get; }
     static abstract T Minimize( LinearFunctional functional );
-
     void AddConstraint( ILinearConstraint constraint );
     double CurrentObjective();
+    Vector<double> CurrentSolution();
     bool Iterate();
 }
 
@@ -29,6 +33,16 @@ where T : ILinearProgram<T>
     public LP<T> Given( ILinearConstraint constraint )
     {
         problem.AddConstraint( constraint );
+        return this;
+    }
+
+    // Utility method for setting all unknowns as integers
+    public LP<T> AllInteger()
+    {
+        foreach ( var index in Enumerable.Range( 0, problem.NumUnknowns ) )
+        {
+            problem.AddConstraint( new IntegerConstraint( index ) );
+        }
         return this;
     }
 
