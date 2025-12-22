@@ -65,8 +65,11 @@ record struct JoltageRequirement( List<long> Joltages )
 
     public Vector<double> ToVector() =>
         Vector<double>.Build.DenseOfArray(
-            Joltages.Select( j => ( double ) j ).ToArray()
+            [.. Joltages.Select( j => ( double ) j )]
         );
+
+    public LinearFunctional ToFunctional() =>
+        new LinearFunctional( ToVector() );
 }
 record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchematic> Buttons, JoltageRequirement JRequirements )
 {
@@ -76,6 +79,11 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
 
     public LinearFunctional NumPresses() =>
         new LinearFunctional( Vector<double>.Build.Dense( Buttons.Count, 1.0 ) );
+
+    public LinearOperator ButtonsOperator( int dimension ) =>
+        new LinearOperator( Matrix<double>.Build.DenseOfColumnVectors(
+            Buttons.Select( but => but.ToCoefficientVector( dimension ) ).ToArray()
+        ) );
 
     public long ReachDesiredState()
     {
@@ -94,18 +102,14 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
     public double ReachDesiredJoltage()
     {
         // Assemble Simplex program
-        var b = JRequirements.ToVector();
-        var A = Matrix<double>.Build.DenseOfColumnVectors(
-            Buttons.Select( but => but.ToCoefficientVector( b.Count ) ).ToArray()
-        );
+        var b = JRequirements.ToFunctional();
+        var A = ButtonsOperator( b.Dimensions() );
         var simplex = LP<Simplex>.Minimize( NumPresses() )
-            .Given( new EqualityConstraint( A, b ) );
+            .Given( A == b );
 
         return simplex.Solve();
     }
 }
-
-
 
 static partial class Helpers
 {
