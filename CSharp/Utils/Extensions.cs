@@ -228,19 +228,19 @@ public static class Extensions
 
     public static IEnumerable<T> IgnoreAt<T>( this IEnumerable<T> items, int k ) => items.Where( ( item, index ) => index != k );
 
-    public static int? MinIndex<T>( this IEnumerable<T> items, Func<T, bool> given )
-    where T : struct, IComparable<T>
+    public static int? MinIndex<T, TCompare>( this IEnumerable<T> items, Func<T, Nullable<TCompare>> on )
+    where TCompare : struct, IComparable<TCompare>
     {
         var it = items.GetEnumerator();
-        T? target = null;
+        TCompare? target = null;
         var idx = -1;
         var i = -1;
         while ( it.MoveNext() )
         {
             i++;
-            var cand = it.Current;
-            if ( !given( cand ) ) continue;
-            if ( (target is null) || cand.CompareTo( target.Value ) < 0 )
+            var cand = on( it.Current );
+            if ( cand is null ) continue;
+            if ( (target is null) || cand?.CompareTo( target.Value ) < 0 )
             {
                 idx = i;
                 target = cand;

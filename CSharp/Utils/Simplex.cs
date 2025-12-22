@@ -1,3 +1,4 @@
+using System.Security.Principal;
 using MathNet.Numerics;
 using MathNet.Numerics.LinearAlgebra;
 
@@ -19,11 +20,16 @@ public record SimplexProblem
     private bool onPrimal = true;
 
     public long CurrentObjective => ( long ) -Tableu[0, Tableu.ColumnCount - 1].Round( 0 );
-    public double[] CurrentObjectiveFunctional =>
-        Tableu.SubMatrix( 0, 1, 1, NumUnknowns + NumConstraints ).ToRowMajorArray();
-    public double[] CurrentSolutionCoefficients =>
-        Tableu.SubMatrix( 1, NumConstraints, NumConstraints + NumUnknowns + 1, 1 ).ToRowMajorArray();
 
+    public IEnumerable<double> RowCoefficients( int row ) =>
+        Tableu.Row( row ).Skip( 1 ).Take( NumUnknowns + NumConstraints );
+    public IEnumerable<double> CurrentObjectiveFunctional =>
+        RowCoefficients( 0 );
+
+    public IEnumerable<double> ColumnCoefficients( int col ) =>
+        Tableu.Column( col ).Skip( 1 ).Take( NumConstraints );
+    public IEnumerable<double> CurrentSolutionCoefficients =>
+        ColumnCoefficients( NumConstraints + NumUnknowns + 1 );
 
     public Vector<double> CurrentSolution
     {
@@ -130,77 +136,52 @@ public record SimplexProblem
         }
     }
 
-    private int? GetPivotColumn()
+    private int? getPivotColumn()
     {
-        return CurrentObjectiveFunctional.MinIndex( f => f < -1E-8 ) + 1;
+        return CurrentObjectiveFunctional
+            .MinIndex<double, double>( f => f < -1E-8 ? f : null ) + 1;
     }
 
-    private int? GetDualPivotRow()
+    private int? getDualPivotRow()
     {
-        return CurrentSolutionCoefficients.MinIndex( f => f < -1E-8 ) + 1;
+        return CurrentSolutionCoefficients
+            .MinIndex<double, double>( f => f < -1E-8 ? f : null ) + 1;
     }
-    private int GetPivotRow( int col )
+    private int? getPivotRow( int col )
     {
-        var last = Tableu.ColumnCount - 1;
-        var jdx = 0;
-        var target = double.MaxValue;
-        for ( var i = 1; i < Tableu.RowCount; i++ )
-        {
-            double cand;
-            if ( Tableu[i, col] < 1E-8 )
-            {
-                cand = double.MaxValue;
-            }
-            else
-            {
-                cand = Tableu[i, last] / Tableu[i, col];
-            }
-            if ( cand < target )
-            {
-                jdx = i;
-                target = cand;
-            }
-        }
-        return jdx;
+        return CurrentSolutionCoefficients.Zip(
+            ColumnCoefficients( col )
+        ).MinIndex<(double, double), double>( p => {
+            if ( p.Item2 < 1E-8 ) return null;
+            return p.Item1 / p.Item2;
+        } ) + 1;
     }
 
-    private int GetDualPivotCol( int row )
+    private int? getDualPivotCol( int row )
     {
-        var jdx = 0;
-        var target = double.MaxValue;
-        for ( var i = 1; i < Tableu.ColumnCount; i++ )
-        {
-            double cand;
-            if ( Tableu[row, i] > -1E-8 )
-            {
-                cand = double.MaxValue;
-            }
-            else
-            {
-                cand = Tableu[0, i] / Tableu[row, i];
-            }
-            if ( cand < target )
-            {
-                jdx = i;
-                target = cand;
-            }
-        }
-        return jdx;
+        return CurrentObjectiveFunctional.Zip(
+            RowCoefficients( row )
+        ).MinIndex<(double, double), double>( p => {
+            if ( p.Item2 > -1E-8 ) return null;
+            return p.Item1 / p.Item2;
+        } ) + 1;
     }
 
     private (int row, int col)? getPivotIndices()
     {
         if ( onPrimal )
         {
-            var col = GetPivotColumn();
+            var col = getPivotColumn();
             if ( col is null ) return null;
-            var row = GetPivotRow( col.Value );
-            return (row, col.Value);
+            var row = getPivotRow( col.Value );
+            if ( row is null ) throw new ArgumentException( "Pivot row is null, for some reason" );
+            return (row.Value, col.Value);
         }
-        var dRow = GetDualPivotRow();
+        var dRow = getDualPivotRow();
         if ( dRow is null ) return null;
-        var dCol = GetDualPivotCol( dRow.Value );
-        return (dRow.Value, dCol);
+        var dCol = getDualPivotCol( dRow.Value );
+        if ( dCol is null ) throw new ArgumentException( "Dual pivot column is null, for some reason." );
+        return (dRow.Value, dCol.Value);
     }
 
     public bool Iterate()
