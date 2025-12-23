@@ -20,18 +20,24 @@ Parser.Default.ParseArguments<CommandLineOptions>( args )
         var dayType = solutionsOfYear[$"Day{o.Day}"] ?? throw new ArgumentException( $"År {o.Year}, dag {o.Day} er ikke gyldig" );
         var solution = ( IPuzzle ) Activator.CreateInstance( dayType )!;
         var sw = new Stopwatch();
-        Console.WriteLine( "Part 1:" );
-        sw.Start();
-        solution.Part1();
-        sw.Stop();
-        Console.WriteLine( $"Finished in {sw.ElapsedMilliseconds} ms" );
-        Console.WriteLine( "===========================" );
-        Console.WriteLine( "Part 2:" );
-        sw.Restart();
-        solution.Part2();
-        sw.Stop();
-        Console.WriteLine( $"Finised in {sw.ElapsedMilliseconds} ms" );
-        Console.WriteLine( "===========================" );
+        if ( o.Del.HasFlag( Part.Part1 ) )
+        {
+            Console.WriteLine( "Part 1:" );
+            sw.Start();
+            solution.Part1();
+            sw.Stop();
+            Console.WriteLine( $"Finished in {sw.ElapsedMilliseconds} ms" );
+            Console.WriteLine( "===========================" );
+        }
+        if ( o.Del.HasFlag( Part.Part2 ) )
+        {
+            Console.WriteLine( "Part 2:" );
+            sw.Restart();
+            solution.Part2();
+            sw.Stop();
+            Console.WriteLine( $"Finised in {sw.ElapsedMilliseconds} ms" );
+            Console.WriteLine( "===========================" );
+        }
     } )
     .WithNotParsed( errs => {
         Console.WriteLine( "You stupid piece of shit." );
