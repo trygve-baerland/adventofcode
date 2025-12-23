@@ -15,10 +15,17 @@ public interface ILinearConstraint { }
 public record LinearFunctional( Vector<double> Coefficients )
 {
     public int Dimensions() => Coefficients.Count;
+
+    public static LinearFunctional Constant( double value, int dim ) =>
+        new LinearFunctional(
+            Vector<double>.Build.Dense( dim, value )
+        );
 }
 
 public record LinearOperator( Matrix<double> Coefficients )
 {
+    public static LinearOperator Identity( int n ) =>
+        new LinearOperator( Matrix<double>.Build.DenseIdentity( n ) );
     public int DomainDimensions() => Coefficients.ColumnCount;
     public int RangeDimensions() => Coefficients.RowCount;
 
@@ -31,6 +38,11 @@ public record LinearOperator( Matrix<double> Coefficients )
         }
         return new LessThanConstraint( a.Coefficients, b.Coefficients );
     }
+
+    public static ILinearConstraint operator <=( LinearOperator a, double val ) =>
+        a <= LinearFunctional.Constant( val, a.RangeDimensions() );
+
+
     public static ILinearConstraint operator >=( LinearOperator a, LinearFunctional b )
     {
         // First, we need to check that the dimensions agree:
@@ -38,8 +50,11 @@ public record LinearOperator( Matrix<double> Coefficients )
         {
             throw new ArgumentException( $"Dimension mismatch {a.RangeDimensions()} != {b.Dimensions()}" );
         }
-        return new GreaterThanConstrain( a.Coefficients, b.Coefficients );
+        return new GreaterThanConstraint( a.Coefficients, b.Coefficients );
     }
+
+    public static ILinearConstraint operator >=( LinearOperator a, double val ) =>
+        a >= LinearFunctional.Constant( val, a.RangeDimensions() );
 
     public static ILinearConstraint operator ==( LinearOperator a, LinearFunctional b )
     {
@@ -55,10 +70,21 @@ public record LinearOperator( Matrix<double> Coefficients )
     {
         throw new ArgumentException( $"'!=' makes no sense in this context." );
     }
+
+    public static ILinearConstraint operator ^( LinearOperator a, LinearFunctional b )
+    {
+        // First, we need to check that the dimensions agree:
+        if ( a.RangeDimensions() != b.Dimensions() )
+        {
+            throw new ArgumentException( $"Dimension mismatch {a.RangeDimensions()} != {b.Dimensions()}" );
+        }
+        return new BinaryConstraint( a.Coefficients, b.Coefficients );
+    }
+
 }
 public record EqualityConstraint( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
 public record LessThanConstraint( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
-public record GreaterThanConstrain( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
-
-public record struct IntegerConstraint( int index ) : ILinearConstraint;
+public record GreaterThanConstraint( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
+public record BinaryConstraint( Matrix<double> A, Vector<double> B ) : ILinearConstraint;
+public record IntegerConstraint( int index ) : ILinearConstraint;
 

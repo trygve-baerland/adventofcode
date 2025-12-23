@@ -14,8 +14,8 @@ public sealed class Day10 : IPuzzle
 
     public void Part1()
     {
-        var data = Data;
-        var result = data.Sum( m => m.ReachDesiredState() );
+        var data = TestData;
+        var result = data.Take( 1 ).Sum( m => m.ReachDesiredState() );
         Console.WriteLine( result );
     }
 
@@ -81,7 +81,7 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
     public static IEnumerable<IndicatorLights> ApplyTo( List<ButtonSchematic> buttonSchematics, IndicatorLights lights ) => buttonSchematics.Select( b => lights.Apply( b ) );
 
     public LinearFunctional NumPresses() =>
-        new LinearFunctional( Vector<double>.Build.Dense( Buttons.Count, 1.0 ) );
+        LinearFunctional.Constant( 1.0, Buttons.Count );
 
     public LinearOperator ButtonsOperator( int dimension ) =>
         new LinearOperator( Matrix<double>.Build.DenseOfColumnVectors(
@@ -90,18 +90,19 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
 
     public double ReachDesiredState()
     {
+        Console.WriteLine( this );
         // Assemble Simplex program
         var b = DesiredState.ToFunctional();
+        var c = NumPresses();
+        var I = LinearOperator.Identity( c.Dimensions() );
         var A = ButtonsOperator( b.Dimensions() );
-        var simplex = LP<Simplex>.Minimize( NumPresses() )
-            .Given( A == b )
+        var simplex = LP<Simplex>.Minimize( c )
+            .Given( A ^ b )
+            .Given( I <= 1.0 )
             .AllInteger();
-
+        Console.WriteLine( simplex.Problem.Tableu );
         var result = simplex.Solve();
-        var sol = simplex.CurrentSolution();
         Console.WriteLine( $"Objective is {simplex.CurrentObjective()}" );
-        //Console.WriteLine( $"Solution is {sol}" );
-        //Console.WriteLine( $"{A.Coefficients * sol} vs. {b.Coefficients}" );
         return result;
 
         //var initial = IndicatorLights.AllOff( DesiredState.Lights.Count() );

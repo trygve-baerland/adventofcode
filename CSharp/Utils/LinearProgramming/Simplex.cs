@@ -1,5 +1,7 @@
 using MathNet.Numerics.LinearAlgebra;
 using AoC.Utils;
+using System.Security.Cryptography;
+using System.Reflection.PortableExecutable;
 
 namespace AoC.Utils.LinearProgramming;
 
@@ -17,13 +19,13 @@ public record Simplex : ILinearProgram<Simplex>
     public required int NumConstraints { get; set; }
 
     private List<int> integerUnknowns = [];
-    private static double M = 1000;
+    public double M { get; set; } = 1000;
     private bool onPrimal = true;
 
     public double CurrentObjective() => -Tableu[0, Tableu.ColumnCount - 1];
 
     public IEnumerable<double> RowCoefficients( int row ) =>
-        Tableu.Row( row ).Skip( 1 ).Take( NumUnknowns + NumConstraints );
+        Tableu.Row( row ).Skip( 1 ).Take( Tableu.ColumnCount - 2 );
     public IEnumerable<double> CurrentObjectiveFunctional =>
         RowCoefficients( 0 );
 
@@ -60,56 +62,114 @@ public record Simplex : ILinearProgram<Simplex>
         switch ( constraint )
         {
             case LessThanConstraint lc:
-                addInequalityConstraints( lc.A, lc.B );
+                addConstraint( lc.A, lc.B, true, null, false, null );
                 break;
             case EqualityConstraint ec:
-                addEqualityConstraints( ec.A, ec.B );
+                addConstraint( ec.A, ec.B, false, null, true, null );
                 break;
             case IntegerConstraint ic:
                 if ( ic.index < 0 || ic.index >= NumUnknowns )
                     throw new ArgumentException( $"Invalid index for unknown. {ic.index}" );
                 integerUnknowns.Add( ic.index );
                 break;
+            case BinaryConstraint bc:
+                addConstraint( bc.A, bc.B, true, -2.0, true, null );
+                break;
             default:
                 throw new ArgumentException( $"Invalid constraint type: {constraint.GetType()}" );
         }
     }
-    private void addInequalityConstraints( Matrix<double> A, Vector<double> b )
+
+    private void addConstraint(
+        Matrix<double> A,
+        Vector<double> b,
+        bool addSlacks,
+        double? slackScale,
+        bool addVars,
+        double? varScale
+    )
     {
         // Initial assertions
         var n = A.RowCount;
         var m = A.ColumnCount;
+        // We allow inputting constraints only for the unknowns.
+        if ( m == NumUnknowns )
+        {
+            m = Tableu.ColumnCount - 2;
+        }
 
         if ( b.Count != n )
         {
             throw new ArgumentException( $"Mismatch in number of constraints and values: {n} != {b.Count}" );
         }
-        if ( m != NumConstraints + NumUnknowns )
+        if ( m != Tableu.ColumnCount - 2 )
         {
             throw new ArgumentException( "The given equality constraint doesn't match the problem:" +
                 $" {m}(A.ColumnCount) != {NumConstraints + NumUnknowns}(number of unknowns and constraints thus far)" );
         }
-        // Initialize new matrix
-        var newTab = Matrix<double>.Build.Dense( Tableu.RowCount + n, Tableu.ColumnCount + n, 0.0 );
+
+        // Let's figure out what submatrices to add
+        var numNewColumns = 0;
+        if ( addSlacks ) numNewColumns += n;
+        if ( addVars ) numNewColumns += n;
+
+        // Let's initialize the new tableu:
+        var newTab = Matrix<double>.Build.Dense(
+            Tableu.RowCount + n,
+            Tableu.ColumnCount + numNewColumns,
+            0.0
+        );
         // The first block is the same as before
         var oldB = Tableu.SubMatrix( 0, Tableu.RowCount, Tableu.ColumnCount - 1, 1 );
         var oldTab = Tableu.SubMatrix( 0, Tableu.RowCount, 0, Tableu.ColumnCount - 1 );
         newTab.SetSubMatrix( 0, 0, oldTab );
-        newTab.SetSubMatrix( 0, n + m + 1, oldB );
-        newTab.SetSubMatrix( Tableu.RowCount, n + m + 1, b.ToColumnMatrix() );
-        // add in the new constraints:
-        newTab.SetSubMatrix( 1 + NumConstraints, 1, A );
-        // add in identity for the new constraint variables
-        newTab.SetSubMatrix( 1 + NumConstraints, m + 1, Matrix<double>.Build.DenseIdentity( n ) );
+        newTab.SetSubMatrix( 0, Tableu.ColumnCount - 1 + numNewColumns, oldB );
+        newTab.SetSubMatrix( Tableu.RowCount, Tableu.ColumnCount - 1 + numNewColumns, b.ToColumnMatrix() );
+        // Set the constraint coefficients:
+        newTab.SetSubMatrix( Tableu.RowCount, 1, A );
 
-        Tableu = newTab;
-        // Update other state variables;
-        NumConstraints += n;
         // Update basic variables by extending with the newly introduced constraint variables
-        var newBasics = Enumerable.Range( NumUnknowns, BasicVars.Length + n ).ToArray();
-        //var newBasics = new int[BasicVars.Length + n];
+        var newBasics = Enumerable.Range(
+            NumUnknowns, BasicVars.Length + numNewColumns
+        ).ToArray();
         Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
         BasicVars = newBasics;
+        NumConstraints += n;
+        // Add identity submatrices for slacks and variables:
+        var I = Matrix<double>.Build.DenseIdentity( n );
+        var rowOffset = Tableu.RowCount;
+        var colOffset = Tableu.ColumnCount - 1;
+        Tableu = newTab;
+
+        if ( addVars )
+        {
+            Tableu.SetSubMatrix(
+                rowOffset,
+                colOffset,
+                (varScale ?? 1.0) * I
+            );
+            // Finally, we penalize these heavily, so they
+            // won't show up in the solution:
+            //Tableu.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
+            Tableu.SetSubMatrix(
+                0, colOffset,
+                Vector<double>.Build.Dense( n, M ).ToRowMatrix()
+            );
+
+            // We perform initialization
+            Initialize( rowOffset, colOffset, n );
+            colOffset += n;
+        }
+        if ( addSlacks )
+        {
+            Tableu.SetSubMatrix(
+                rowOffset,
+                colOffset,
+                (slackScale ?? 1.0) * I
+            );
+            colOffset += n;
+        }
+
 
     }
 
@@ -131,26 +191,12 @@ public record Simplex : ILinearProgram<Simplex>
         return true;
     }
 
-    private void addEqualityConstraints( Matrix<double> A, Vector<double> b )
-    {
-        addInequalityConstraints( A, b );
-        var n = A.RowCount;
-        var m = A.ColumnCount;
-        // Set up M-values for the new constraints:
-        Tableu.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
-        // Tableu[0, Tableu.ColumnCount - 1] += M * b.Sum();
-
-        // Finally we pivot on the new constraints
-        var oldN = Tableu.RowCount - n;
-        Initialize( Enumerable.Range( oldN, n ), NumUnknowns );
-    }
-
     // Run through inverse iteration n times to get initial tableau
-    public void Initialize( IEnumerable<int> variables, int offset )
+    public void Initialize( int row, int col, int count )
     {
-        foreach ( var i in variables )
+        foreach ( var i in Enumerable.Range( 0, count ) )
         {
-            Tableu.Pivot( i, offset + i );
+            Tableu.Pivot( row + i, col + i );
         }
     }
 
@@ -204,6 +250,7 @@ public record Simplex : ILinearProgram<Simplex>
 
     public bool Iterate()
     {
+        Console.WriteLine( Tableu );
         var pivot = getPivotIndices();
         if ( pivot is null )
         {
