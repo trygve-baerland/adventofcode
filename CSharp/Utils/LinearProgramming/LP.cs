@@ -13,6 +13,7 @@ where T : ILinearProgram<T>
     double CurrentObjective();
     Vector<double> CurrentSolution();
     bool Iterate();
+    bool Initialize();
 }
 
 public delegate void RefAction<T>( ref T item );
@@ -50,6 +51,7 @@ where T : ILinearProgram<T>
 
     public double Solve()
     {
+        Problem.Initialize();
         while ( !Problem.Iterate() ) { }
         return Problem.CurrentObjective();
     }

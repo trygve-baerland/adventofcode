@@ -1,7 +1,6 @@
 using MathNet.Numerics.LinearAlgebra;
 using AoC.Utils;
-using System.Security.Cryptography;
-using System.Reflection.PortableExecutable;
+using Sprache;
 
 namespace AoC.Utils.LinearProgramming;
 
@@ -19,6 +18,7 @@ public record Simplex : ILinearProgram<Simplex>
     public required int NumConstraints { get; set; }
 
     private List<int> integerUnknowns = [];
+    private List<(int Row, int Col)> artificialUnknowns = [];
     public double M { get; set; } = 1000;
     private bool onPrimal = true;
 
@@ -141,6 +141,15 @@ public record Simplex : ILinearProgram<Simplex>
         var colOffset = Tableu.ColumnCount - 1;
         Tableu = newTab;
 
+        if ( addSlacks )
+        {
+            Tableu.SetSubMatrix(
+                rowOffset,
+                colOffset,
+                (slackScale ?? 1.0) * I
+            );
+            colOffset += n;
+        }
         if ( addVars )
         {
             Tableu.SetSubMatrix(
@@ -155,24 +164,34 @@ public record Simplex : ILinearProgram<Simplex>
                 0, colOffset,
                 Vector<double>.Build.Dense( n, M ).ToRowMatrix()
             );
-
-            // We perform initialization
-            Initialize( rowOffset, colOffset, n );
-            colOffset += n;
+            // Moreover, we need to artifical their indices as artificial unknowns
+            artificialUnknowns.AddRange(
+                Enumerable.Range( 0, n ).Select( c => (rowOffset + c, colOffset - 1 + c) ) );
         }
-        if ( addSlacks )
-        {
-            Tableu.SetSubMatrix(
-                rowOffset,
-                colOffset,
-                (slackScale ?? 1.0) * I
-            );
-            colOffset += n;
-        }
-
-
     }
 
+    private double getCoefficient( int i )
+    {
+        var r = BasicVars.Index().FirstOrDefault( index => i == index.Item, (Index: -1, Item: 0) ).Index;
+        if ( r < 0 ) return 0.0;
+        return Tableu[r + 1, Tableu.ColumnCount - 1];
+    }
+    public bool Initialize()
+    {
+        if ( artificialUnknowns.Count < 1 ) return false;
+        // Find the artificial unknowns that are in the current basic
+        // solution
+        var solvedAny = false;
+        foreach ( var item in artificialUnknowns )
+        {
+            if ( getCoefficient( item.Col ) > 1E-8 )
+            {
+                Tableu.Pivot( item.Row, item.Col + 1 );
+                solvedAny = true;
+            }
+        }
+        return solvedAny;
+    }
     private bool cutNonIntegerUnknowns()
     {
         if ( integerUnknowns.Count < 1 ) return false;
@@ -250,7 +269,6 @@ public record Simplex : ILinearProgram<Simplex>
 
     public bool Iterate()
     {
-        Console.WriteLine( Tableu );
         var pivot = getPivotIndices();
         if ( pivot is null )
         {
@@ -270,7 +288,6 @@ public record Simplex : ILinearProgram<Simplex>
         }
         // Do iteration
         Tableu.Pivot( pivot.Value.row, pivot.Value.col );
-
         // Update basic vars:
         BasicVars[pivot.Value.row - 1] = pivot.Value.col - 1;
         // return (well, duh)
