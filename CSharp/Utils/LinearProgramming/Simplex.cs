@@ -39,15 +39,17 @@ public record Simplex : ILinearProgram<Simplex>
     public IEnumerable<double> CurrentSolutionCoefficients =>
         ColumnCoefficients( NumConstraints + NumUnknowns + 1 );
 
-    public Vector<double> CurrentSolution()
+    public Vector<double> AllSolutionCoefficients()
     {
-        var result = Vector<double>.Build.Dense( NumUnknowns + NumConstraints, 0.0 );
+        var result = Vector<double>.Build.Dense( Tableu.ColumnCount - 2, 0.0 );
         for ( int i = 0; i < BasicVars.Length; i++ )
         {
             result[BasicVars[i]] = Tableu[1 + i, Tableu.ColumnCount - 1];
         }
-        return result.SubVector( 0, NumUnknowns );
+        return result;
     }
+
+    public Vector<double> CurrentSolution() => AllSolutionCoefficients().SubVector( 0, NumUnknowns );
 
     public static Simplex Minimize( LinearFunctional functional )
     {
@@ -128,12 +130,10 @@ public record Simplex : ILinearProgram<Simplex>
         // Set the constraint coefficients:
         newTab.SetSubMatrix( Tableu.RowCount, 1, A );
 
-        // Update basic variables by extending with the newly introduced constraint variables
-        var newBasics = Enumerable.Range(
-            NumUnknowns, BasicVars.Length + numNewColumns
-        ).ToArray();
-        Array.Copy( BasicVars, 0, newBasics, 0, BasicVars.Length );
-        BasicVars = newBasics;
+        // Update basic variables by extending with the newly
+        // For now, we only add the last set of variables in `vars`
+        // Honestly, a little unsure what makes sense more generally.
+        BasicVars = BasicVars.Concat( Enumerable.Range( newTab.ColumnCount - 2 - n, n ) ).ToArray();
         NumConstraints += n;
         // Add identity submatrices for slacks and variables:
         var I = Matrix<double>.Build.DenseIdentity( n );
