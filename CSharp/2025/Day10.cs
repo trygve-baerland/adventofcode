@@ -14,8 +14,8 @@ public sealed class Day10 : IPuzzle
 
     public void Part1()
     {
-        var data = TestData;
-        var result = data.Skip( 1 ).Take( 1 ).Sum( m => m.ReachDesiredState() );
+        var data = Data;
+        var result = data.Sum( m => m.ReachDesiredState() );
         Console.WriteLine( result );
     }
 
@@ -100,12 +100,12 @@ record struct MachineWithLights( IndicatorLights DesiredState, List<ButtonSchema
             .Given( A ^ b )
             .Given( I <= 1.0 )
             .AllInteger();
-        Console.WriteLine( simplex.Problem.Tableu );
-        Console.WriteLine( string.Join( ',', simplex.Problem.BasicVars ) );
+        //Console.WriteLine( simplex.Problem.Tableu );
+        //Console.WriteLine( string.Join( ',', simplex.Problem.BasicVars ) );
         var result = simplex.Solve();
-        Console.WriteLine( simplex.Problem.Tableu );
-        Console.WriteLine( string.Join( ',', simplex.Problem.BasicVars ) );
-        Console.WriteLine( $"Solution: {simplex.Problem.AllSolutionCoefficients()}" );
+        //Console.WriteLine( simplex.Problem.Tableu );
+        //Console.WriteLine( string.Join( ',', simplex.Problem.BasicVars ) );
+        //Console.WriteLine( $"Solution: {simplex.Problem.AllSolutionCoefficients()}" );
         Console.WriteLine( $"Objective is {simplex.CurrentObjective()}" );
         return result;
 

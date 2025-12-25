@@ -8,7 +8,7 @@ public record Simplex : ILinearProgram<Simplex>
 {
     private record struct Variable( double scale, bool penalize, bool requireInteger )
     {
-        public static Variable Slack( double scale = 1.0 ) => new Variable( scale, false, false );
+        public static Variable Slack( double scale = 1.0, bool requireInteger = false ) => new Variable( scale, false, requireInteger );
         public static Variable Artificial( double scale = 1.0 ) => new Variable( scale, true, false );
     }
     public required Matrix<double> Tableu { get; set; }
@@ -37,7 +37,7 @@ public record Simplex : ILinearProgram<Simplex>
     public IEnumerable<double> ColumnCoefficients( int col ) =>
         Tableu.Column( col ).Skip( 1 ).Take( NumConstraints );
     public IEnumerable<double> CurrentSolutionCoefficients =>
-        ColumnCoefficients( NumConstraints + NumUnknowns + 1 );
+        ColumnCoefficients( Tableu.ColumnCount - 1 );
 
     public Vector<double> AllSolutionCoefficients()
     {
@@ -80,7 +80,7 @@ public record Simplex : ILinearProgram<Simplex>
                 integerUnknowns.Add( ic.index );
                 break;
             case BinaryConstraint bc:
-                addConstraint( bc.A, bc.B, Variable.Slack( -2.0 ), Variable.Artificial() );
+                addConstraint( bc.A, bc.B, Variable.Slack( -2.0, requireInteger: true ), Variable.Artificial() );
                 break;
             default:
                 throw new ArgumentException( $"Invalid constraint type: {constraint.GetType()}" );
@@ -157,6 +157,11 @@ public record Simplex : ILinearProgram<Simplex>
                     Enumerable.Range( 0, n ).Select( c => (rowOffset + c, colOffset - 1 + c) ) );
 
             }
+            // Moreover, if we require these variables to be integer:
+            if ( slack.requireInteger )
+            {
+                integerUnknowns.AddRange( Enumerable.Range( colOffset - 1, n ) );
+            }
             colOffset += n;
         }
     }
@@ -192,11 +197,9 @@ public record Simplex : ILinearProgram<Simplex>
             )
             .Where( index => index >= 0 && !Tableu[1 + index, Tableu.ColumnCount - 1].IsInteger() )
             .ToList();
-
         if ( nonIntegersIndices.Count == 0 ) return false;
 
-        var ec = CreateIntegerConstraintsFor( nonIntegersIndices );
-        AddConstraint( ec );
+        CreateIntegerConstraintsFor( nonIntegersIndices );
         onPrimal = false;
         return true;
     }
@@ -285,13 +288,13 @@ public record Simplex : ILinearProgram<Simplex>
         return false;
     }
 
-    private LessThanConstraint CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
+    private void CreateIntegerConstraintsFor( IEnumerable<int> rowIndices )
     {
         var mat = Matrix<double>.Build.DenseOfRowVectors(
             rowIndices.Select( ri => Tableu.Row( ri + 1 ).Map( v => double.Floor( v ) - v ) )
         );
         var A = mat.SubMatrix( 0, mat.RowCount, 1, mat.ColumnCount - 2 );
         var b = mat.Column( mat.ColumnCount - 1 );
-        return new LessThanConstraint( A, b );
+        addConstraint( A, b, Variable.Slack( requireInteger: true ) );
     }
 }
