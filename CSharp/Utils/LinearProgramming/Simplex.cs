@@ -6,6 +6,11 @@ namespace AoC.Utils.LinearProgramming;
 
 public record Simplex : ILinearProgram<Simplex>
 {
+    private record struct Variable( double scale, bool penalize, bool requireInteger )
+    {
+        public static Variable Slack( double scale = 1.0 ) => new Variable( scale, false, false );
+        public static Variable Artificial( double scale = 1.0 ) => new Variable( scale, true, false );
+    }
     public required Matrix<double> Tableu { get; set; }
     /// <summary>
     /// BasicVars is a collection of the column indices for the current BFS (Basic feasible solution)
@@ -62,10 +67,10 @@ public record Simplex : ILinearProgram<Simplex>
         switch ( constraint )
         {
             case LessThanConstraint lc:
-                addConstraint( lc.A, lc.B, true, null, false, null );
+                addConstraint( lc.A, lc.B, Variable.Slack() );
                 break;
             case EqualityConstraint ec:
-                addConstraint( ec.A, ec.B, false, null, true, null );
+                addConstraint( ec.A, ec.B, Variable.Artificial() );
                 break;
             case IntegerConstraint ic:
                 if ( ic.index < 0 || ic.index >= NumUnknowns )
@@ -73,7 +78,7 @@ public record Simplex : ILinearProgram<Simplex>
                 integerUnknowns.Add( ic.index );
                 break;
             case BinaryConstraint bc:
-                addConstraint( bc.A, bc.B, true, -2.0, true, null );
+                addConstraint( bc.A, bc.B, Variable.Slack( -2.0 ), Variable.Artificial() );
                 break;
             default:
                 throw new ArgumentException( $"Invalid constraint type: {constraint.GetType()}" );
@@ -83,10 +88,7 @@ public record Simplex : ILinearProgram<Simplex>
     private void addConstraint(
         Matrix<double> A,
         Vector<double> b,
-        bool addSlacks,
-        double? slackScale,
-        bool addVars,
-        double? varScale
+        params Variable[] vars
     )
     {
         // Initial assertions
@@ -109,9 +111,7 @@ public record Simplex : ILinearProgram<Simplex>
         }
 
         // Let's figure out what submatrices to add
-        var numNewColumns = 0;
-        if ( addSlacks ) numNewColumns += n;
-        if ( addVars ) numNewColumns += n;
+        var numNewColumns = vars.Length * n;
 
         // Let's initialize the new tableu:
         var newTab = Matrix<double>.Build.Dense(
@@ -141,32 +141,23 @@ public record Simplex : ILinearProgram<Simplex>
         var colOffset = Tableu.ColumnCount - 1;
         Tableu = newTab;
 
-        if ( addSlacks )
+        foreach ( var slack in vars )
         {
-            Tableu.SetSubMatrix(
-                rowOffset,
-                colOffset,
-                (slackScale ?? 1.0) * I
-            );
+            // Add identity submatrix:
+            Tableu.SetSubMatrix( rowOffset, colOffset, slack.scale * I );
+            // Check if we need to add penalizers:
+            if ( slack.penalize )
+            {
+                Tableu.SetSubMatrix(
+                    0, colOffset,
+                    Vector<double>.Build.Dense( n, M ).ToRowMatrix()
+                );
+                // Moreover, we need to artifical their indices as artificial unknowns
+                artificialUnknowns.AddRange(
+                    Enumerable.Range( 0, n ).Select( c => (rowOffset + c, colOffset - 1 + c) ) );
+
+            }
             colOffset += n;
-        }
-        if ( addVars )
-        {
-            Tableu.SetSubMatrix(
-                rowOffset,
-                colOffset,
-                (varScale ?? 1.0) * I
-            );
-            // Finally, we penalize these heavily, so they
-            // won't show up in the solution:
-            //Tableu.SetSubMatrix( 0, m + 1, Vector<double>.Build.Dense( n, M ).ToRowMatrix() );
-            Tableu.SetSubMatrix(
-                0, colOffset,
-                Vector<double>.Build.Dense( n, M ).ToRowMatrix()
-            );
-            // Moreover, we need to artifical their indices as artificial unknowns
-            artificialUnknowns.AddRange(
-                Enumerable.Range( 0, n ).Select( c => (rowOffset + c, colOffset - 1 + c) ) );
         }
     }
 
